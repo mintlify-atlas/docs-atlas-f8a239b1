@@ -111,6 +111,13 @@
             ]
           },
           {
+            "group": "Extraction",
+            "pages": [
+              "api-reference/extraction/extract",
+              "api-reference/extraction/get-extract-status"
+            ]
+          },
+          {
             "group": "Research",
             "pages": [
               "api-reference/research/deep-research",
@@ -118,9 +125,17 @@
             ]
           },
           {
+            "group": "LLMs.txt",
+            "pages": [
+              "api-reference/llmstxt/generate-llmstxt",
+              "api-reference/llmstxt/get-llmstxt-status"
+            ]
+          },
+          {
             "group": "Billing",
             "pages": [
-              "api-reference/billing/get-credit-usage"
+              "api-reference/billing/get-credit-usage",
+              "api-reference/billing/get-token-usage"
             ]
           }
         ]

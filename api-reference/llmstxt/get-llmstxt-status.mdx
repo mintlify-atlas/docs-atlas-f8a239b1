@@ -1,0 +1,108 @@
+---
+title: 'Get LLMs.txt generation status'
+description: 'Get the status of an LLMs.txt generation job'
+---
+
+## Endpoint
+
+<CodeGroup>
+```http
+GET /v1/llmstxt/{id}
+```
+</CodeGroup>
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token. Include your API key in the Authorization header:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the LLMs.txt generation job
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the request was successful
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  The current status of the generation job. Can be `processing`, `completed`, or `failed`.
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The generated LLMs.txt data. Only present when status is `completed`.
+  <Expandable title="properties">
+    <ResponseField name="llmstxt" type="string">
+      The generated LLMs.txt content
+    </ResponseField>
+    <ResponseField name="llmsfulltxt" type="string">
+      The full text content when showFullText is true
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="expiresAt" type="string">
+  When the generated content will expire (ISO 8601 format)
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+```bash cURL
+curl -X GET https://api.firecrawl.dev/v1/llmstxt/123e4567-e89b-12d3-a456-426614174000 \
+  -H 'Authorization: Bearer YOUR_API_KEY'
+```
+
+```python Python
+from firecrawl import FirecrawlApp
+
+app = FirecrawlApp(api_key='YOUR_API_KEY')
+
+status = app.get_llmstxt_status('123e4567-e89b-12d3-a456-426614174000')
+
+print(status)
+```
+
+```javascript JavaScript
+import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({ apiKey: 'YOUR_API_KEY' });
+
+const status = await app.getLLMsTxtStatus('123e4567-e89b-12d3-a456-426614174000');
+
+console.log(status);
+```
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "success": true,
+  "status": "completed",
+  "data": {
+    "llmstxt": "# Example Site\n\n> A brief description of the site...\n\n## Main Content\n...",
+    "llmsfulltxt": "Full text content here..."
+  },
+  "expiresAt": "2026-03-10T12:00:00Z"
+}
+```
+
+## Error Responses
+
+<ResponseField name="404" type="object">
+  **Not Found** - LLMs.txt generation job not found.
+  
+  ```json
+  {
+    "success": false,
+    "error": "LLMs.txt generation job not found"
+  }
+  ```
+</ResponseField>

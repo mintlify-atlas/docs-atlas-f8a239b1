@@ -1,0 +1,87 @@
+---
+title: 'Get extract job status'
+description: 'Get the status of an extract job'
+---
+
+## Endpoint
+
+<CodeGroup>
+```http
+GET /v1/extract/{id}
+```
+</CodeGroup>
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token. Include your API key in the Authorization header:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the extract job
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the request was successful
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  The current status of the extract job. Can be `completed`, `processing`, `failed`, or `cancelled`.
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The extracted data according to your schema. Only present when status is `completed`.
+</ResponseField>
+
+<ResponseField name="expiresAt" type="string">
+  The date and time when the extract job data will expire (ISO 8601 format)
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+```bash cURL
+curl -X GET https://api.firecrawl.dev/v1/extract/123e4567-e89b-12d3-a456-426614174000 \
+  -H 'Authorization: Bearer YOUR_API_KEY'
+```
+
+```python Python
+from firecrawl import FirecrawlApp
+
+app = FirecrawlApp(api_key='YOUR_API_KEY')
+
+status = app.get_extract_status('123e4567-e89b-12d3-a456-426614174000')
+
+print(status)
+```
+
+```javascript JavaScript
+import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({ apiKey: 'YOUR_API_KEY' });
+
+const status = await app.getExtractStatus('123e4567-e89b-12d3-a456-426614174000');
+
+console.log(status);
+```
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "success": true,
+  "status": "completed",
+  "data": {
+    "title": "Example Article Title",
+    "author": "John Doe"
+  },
+  "expiresAt": "2026-03-10T12:00:00Z"
+}
+```

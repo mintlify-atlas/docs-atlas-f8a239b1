@@ -1,0 +1,155 @@
+---
+title: 'Extract structured data'
+description: 'Extract structured data from pages using LLMs'
+---
+
+## Endpoint
+
+<CodeGroup>
+```http
+POST /v1/extract
+```
+</CodeGroup>
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token. Include your API key in the Authorization header:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Request Body
+
+<ParamField body="urls" type="array" required>
+  The URLs to extract data from. URLs should be in glob format.
+</ParamField>
+
+<ParamField body="prompt" type="string">
+  Prompt to guide the extraction process
+</ParamField>
+
+<ParamField body="schema" type="object">
+  Schema to define the structure of the extracted data. Must conform to [JSON Schema](https://json-schema.org/).
+</ParamField>
+
+<ParamField body="enableWebSearch" type="boolean" default={false}>
+  When true, the extraction will use web search to find additional data
+</ParamField>
+
+<ParamField body="ignoreSitemap" type="boolean" default={false}>
+  When true, sitemap.xml files will be ignored during website scanning
+</ParamField>
+
+<ParamField body="includeSubdomains" type="boolean" default={true}>
+  When true, subdomains of the provided URLs will also be scanned
+</ParamField>
+
+<ParamField body="showSources" type="boolean" default={false}>
+  When true, the sources used to extract the data will be included in the response as `sources` key
+</ParamField>
+
+<ParamField body="scrapeOptions" type="object">
+  Additional scraping options to apply. See the [scrape endpoint](/api-reference/scraping/scrape) for available options.
+</ParamField>
+
+<ParamField body="ignoreInvalidURLs" type="boolean" default={false}>
+  If invalid URLs are specified in the urls array, they will be ignored. Instead of them failing the entire request, an extract using the remaining valid URLs will be performed, and the invalid URLs will be returned in the invalidURLs field of the response.
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the extract job was successfully started
+</ResponseField>
+
+<ResponseField name="id" type="string">
+  The unique identifier of the extract job. Use this to check the status.
+</ResponseField>
+
+<ResponseField name="invalidURLs" type="array">
+  If ignoreInvalidURLs is true, this is an array containing the invalid URLs that were specified in the request. If there were no invalid URLs, this will be an empty array. If ignoreInvalidURLs is false, this field will be undefined.
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.firecrawl.dev/v1/extract \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -d '{
+    "urls": ["https://example.com"],
+    "prompt": "Extract the main article title and author",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "author": { "type": "string" }
+      }
+    }
+  }'
+```
+
+```python Python
+from firecrawl import FirecrawlApp
+
+app = FirecrawlApp(api_key='YOUR_API_KEY')
+
+result = app.extract(
+    urls=['https://example.com'],
+    prompt='Extract the main article title and author',
+    schema={
+        'type': 'object',
+        'properties': {
+            'title': {'type': 'string'},
+            'author': {'type': 'string'}
+        }
+    }
+)
+
+print(result)
+```
+
+```javascript JavaScript
+import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({ apiKey: 'YOUR_API_KEY' });
+
+const result = await app.extract({
+  urls: ['https://example.com'],
+  prompt: 'Extract the main article title and author',
+  schema: {
+    type: 'object',
+    properties: {
+      title: { type: 'string' },
+      author: { type: 'string' }
+    }
+  }
+});
+
+console.log(result);
+```
+</CodeGroup>
+
+## Error Responses
+
+<ResponseField name="400" type="object">
+  **Invalid Request** - Invalid input data.
+  
+  ```json
+  {
+    "error": "Invalid input data."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  **Server Error** - An unexpected error occurred on the server.
+  
+  ```json
+  {
+    "error": "An unexpected error occurred on the server."
+  }
+  ```
+</ResponseField>

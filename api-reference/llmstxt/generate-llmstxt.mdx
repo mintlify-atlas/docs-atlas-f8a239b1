@@ -1,0 +1,100 @@
+---
+title: 'Generate LLMs.txt'
+description: 'Generate LLMs.txt file for a website'
+---
+
+## Endpoint
+
+<CodeGroup>
+```http
+POST /v1/llmstxt
+```
+</CodeGroup>
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token. Include your API key in the Authorization header:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Request Body
+
+<ParamField body="url" type="string" required>
+  The URL to generate LLMs.txt from
+</ParamField>
+
+<ParamField body="maxUrls" type="integer" default={2}>
+  Maximum number of URLs to analyze
+</ParamField>
+
+<ParamField body="showFullText" type="boolean" default={false}>
+  Include full text content in the response
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the LLMs.txt generation job was successfully started
+</ResponseField>
+
+<ResponseField name="id" type="string">
+  The unique identifier of the LLMs.txt generation job. Use this to check the status.
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.firecrawl.dev/v1/llmstxt \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -d '{
+    "url": "https://example.com",
+    "maxUrls": 5,
+    "showFullText": true
+  }'
+```
+
+```python Python
+from firecrawl import FirecrawlApp
+
+app = FirecrawlApp(api_key='YOUR_API_KEY')
+
+result = app.generate_llmstxt(
+    url='https://example.com',
+    max_urls=5,
+    show_full_text=True
+)
+
+print(result)
+```
+
+```javascript JavaScript
+import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({ apiKey: 'YOUR_API_KEY' });
+
+const result = await app.generateLLMsTxt({
+  url: 'https://example.com',
+  maxUrls: 5,
+  showFullText: true
+});
+
+console.log(result);
+```
+</CodeGroup>
+
+## Error Responses
+
+<ResponseField name="400" type="object">
+  **Invalid Request** - Invalid parameters provided.
+  
+  ```json
+  {
+    "success": false,
+    "error": "Invalid parameters provided"
+  }
+  ```
+</ResponseField>
