@@ -1,80 +1,316 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get started with Firecrawl in 5 minutes - scrape your first website and extract structured data
 ---
 
-## Get started in three steps
+# Quickstart Guide
 
-Get your documentation site running locally and make your first customization.
+This guide will help you make your first API request and scrape a website in minutes.
 
-### Step 1: Set up your local environment
+## Get Your API Key
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+<Steps>
+  <Step title="Sign up for Firecrawl">
+    Go to [firecrawl.dev](https://firecrawl.dev) and create a free account.
+  </Step>
+  
+  <Step title="Generate an API key">
+    Navigate to your dashboard and generate a new API key. Your API key will start with `fc-`.
+  </Step>
+  
+  <Step title="Save your API key">
+    Store your API key securely. You'll need it for all API requests.
+  </Step>
+</Steps>
+
+<Warning>
+Never commit your API key to version control. Use environment variables to keep it secure.
+</Warning>
+
+## Make Your First Request
+
+Let's scrape a website and get clean markdown output:
+
+<CodeGroup>
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v2/scrape' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://firecrawl.dev",
+    "formats": ["markdown", "html"]
+  }'
+```
+
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# Scrape a single URL
+doc = app.scrape("https://firecrawl.dev", formats=["markdown", "html"])
+print(doc.markdown)
+print(doc.metadata)
+```
+
+```javascript JavaScript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// Scrape a single URL
+const scrapeResponse = await app.scrape('https://firecrawl.dev', {
+  formats: ['markdown', 'html'],
+});
+console.log(scrapeResponse.markdown);
+console.log(scrapeResponse.metadata);
+```
+</CodeGroup>
+
+### Response
+
+You'll receive a JSON response with the scraped content:
+
+```json
+{
+  "success": true,
+  "data": {
+    "markdown": "# Firecrawl\n\nTurn websites into LLM-ready data...",
+    "html": "<!DOCTYPE html><html>...",
+    "metadata": {
+      "title": "Firecrawl - The Web Data API for AI",
+      "description": "The web crawling, scraping, and search API for AI.",
+      "sourceURL": "https://firecrawl.dev",
+      "statusCode": 200
+    }
+  }
+}
+```
+
+## Install an SDK
+
+For production applications, we recommend using one of our official SDKs:
+
+<Tabs>
+  <Tab title="Python">
+    Install the Python SDK:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    ```bash
+    pip install firecrawl-py
+    ```
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+    Basic usage:
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    ```python
+    from firecrawl import Firecrawl
+    
+    app = Firecrawl(api_key="fc-YOUR_API_KEY")
+    
+    # Scrape a website
+    doc = app.scrape("https://firecrawl.dev", formats=["markdown"])
+    print(doc.markdown)
+    
+    # Crawl a website (automatically waits for completion)
+    docs = app.crawl("https://docs.firecrawl.dev", limit=50)
+    for doc in docs.data:
+        print(doc.metadata.source_url, doc.markdown[:100])
+    
+    # Search the web
+    results = app.search("best web scraping tools 2024", limit=10)
+    print(results)
+    ```
+  </Tab>
+  
+  <Tab title="JavaScript">
+    Install the Node.js SDK:
+    
+    ```bash
+    npm install @mendable/firecrawl-js
+    ```
+    
+    Basic usage:
+    
+    ```javascript
+    import Firecrawl from '@mendable/firecrawl-js';
+    
+    const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+    
+    // Scrape a website
+    const doc = await app.scrape('https://firecrawl.dev', { formats: ['markdown'] });
+    console.log(doc.markdown);
+    
+    // Crawl a website (automatically waits for completion)
+    const docs = await app.crawl('https://docs.firecrawl.dev', { limit: 50 });
+    docs.data.forEach(doc => {
+        console.log(doc.metadata.sourceURL, doc.markdown.substring(0, 100));
+    });
+    
+    // Search the web
+    const results = await app.search('best web scraping tools 2024', { limit: 10 });
+    results.data.web.forEach(result => {
+        console.log(`${result.title}: ${result.url}`);
+    });
+    ```
+  </Tab>
+  
+  <Tab title="Go">
+    Install the Go SDK:
+    
+    ```bash
+    go get github.com/mendableai/firecrawl-go
+    ```
+    
+    Check out the [Go SDK documentation](https://github.com/mendableai/firecrawl-go) for usage examples.
+  </Tab>
+  
+  <Tab title="Rust">
+    Install the Rust SDK:
+    
+    ```bash
+    cargo add firecrawl
+    ```
+    
+    Check out the [Rust SDK documentation](/sdks/rust) for usage examples.
+  </Tab>
+</Tabs>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+## Extract Structured Data
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+One of Firecrawl's most powerful features is extracting structured data using schemas:
 
-### Step 3: Go live
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+from pydantic import BaseModel
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
 
-## Next steps
+class CompanyInfo(BaseModel):
+    company_mission: str
+    is_open_source: bool
+    is_in_yc: bool
 
-Now that you have your docs running, explore these key features:
+result = app.scrape(
+    'https://firecrawl.dev',
+    formats=[{"type": "json", "schema": CompanyInfo.model_json_schema()}]
+)
 
-<CardGroup cols={2}>
+print(result.json)
+# Output: {"company_mission": "Turn websites into LLM-ready data", "is_open_source": true, "is_in_yc": true}
+```
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+```javascript JavaScript
+import Firecrawl from '@mendable/firecrawl-js';
+import { z } from 'zod';
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+const schema = z.object({
+  company_mission: z.string(),
+  is_open_source: z.boolean(),
+  is_in_yc: z.boolean(),
+});
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
+const result = await app.scrape('https://firecrawl.dev', {
+  formats: [{ type: 'json', schema }]
+});
 
-</CardGroup>
+console.log(result.json);
+// Output: {company_mission: "Turn websites into LLM-ready data", is_open_source: true, is_in_yc: true}
+```
+</CodeGroup>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+You can also extract data without a schema using a simple prompt:
+
+```python
+result = app.scrape(
+    'https://firecrawl.dev',
+    formats=[{"type": "json", "prompt": "Extract the company mission"}]
+)
+```
 </Note>
+
+## Crawl an Entire Website
+
+To scrape multiple pages from a website:
+
+<CodeGroup>
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v2/crawl' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://docs.firecrawl.dev",
+    "limit": 100,
+    "scrapeOptions": {
+      "formats": ["markdown"]
+    }
+  }'
+```
+
+```python Python
+from firecrawl import Firecrawl
+from firecrawl.types import ScrapeOptions
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# Crawl waits for completion automatically
+crawl_result = app.crawl(
+    'https://docs.firecrawl.dev',
+    limit=100,
+    scrape_options=ScrapeOptions(formats=['markdown'])
+)
+
+for doc in crawl_result.data:
+    print(f"{doc.metadata.source_url}: {doc.markdown[:100]}")
+```
+
+```javascript JavaScript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// Crawl waits for completion automatically
+const crawlResponse = await app.crawl('https://docs.firecrawl.dev', {
+  limit: 100,
+  scrapeOptions: { formats: ['markdown'] },
+});
+
+crawlResponse.data.forEach(doc => {
+  console.log(`${doc.metadata.sourceURL}: ${doc.markdown.substring(0, 100)}`);
+});
+```
+</CodeGroup>
+
+<Note>
+The SDKs automatically handle polling for crawl completion. With the REST API, you'll need to poll the status endpoint manually.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/authentication">
+    Learn about API keys and authentication
+  </Card>
+  <Card title="Scraping" icon="newspaper" href="/features/scrape">
+    Deep dive into scraping options and formats
+  </Card>
+  <Card title="Crawling" icon="spider" href="/features/crawl">
+    Master website crawling with advanced options
+  </Card>
+  <Card title="Agent" icon="wand-magic-sparkles" href="/features/agent">
+    Use AI agents for autonomous data gathering
+  </Card>
+</CardGroup>
+
+## Need Help?
+
+<CardGroup cols={2}>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Complete API documentation
+  </Card>
+  <Card title="Discord Community" icon="discord" href="https://discord.com/invite/gSmWdAkdwd">
+    Join our community for support
+  </Card>
+</CardGroup>

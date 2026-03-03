@@ -1,0 +1,148 @@
+---
+title: 'Start Deep Research'
+description: 'Start a deep research operation on a query'
+---
+
+## POST /v1/deep-research
+
+Start a deep research operation that analyzes a query in depth by iteratively searching, analyzing, and synthesizing information from multiple sources.
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token in the Authorization header.
+
+```bash
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Request Body
+
+<ParamField body="query" type="string" required>
+  The query to research
+</ParamField>
+
+<ParamField body="maxDepth" type="integer" default={7}>
+  Maximum depth of research iterations. Must be between 1 and 12.
+</ParamField>
+
+<ParamField body="timeLimit" type="integer" default={300}>
+  Time limit in seconds. Must be between 30 and 600.
+</ParamField>
+
+<ParamField body="maxUrls" type="integer" default={20}>
+  Maximum number of URLs to analyze. Must be between 1 and 1000.
+</ParamField>
+
+<ParamField body="analysisPrompt" type="string">
+  The prompt to use for the final analysis. Useful to format the final analysis markdown in a specific way.
+</ParamField>
+
+<ParamField body="systemPrompt" type="string">
+  The system prompt to use for the research agent. Useful to steer the research agent to a specific direction.
+</ParamField>
+
+<ParamField body="formats" type="array">
+  Array of output formats. Options: `markdown`, `json`, `branding`. Default: `["markdown"]`
+</ParamField>
+
+<ParamField body="jsonOptions" type="object">
+  Options for JSON output
+  
+  <Expandable title="properties">
+    <ParamField body="schema" type="object">
+      The schema to use for the JSON output. Must conform to [JSON Schema](https://json-schema.org/).
+    </ParamField>
+    
+    <ParamField body="systemPrompt" type="string">
+      The system prompt to use for the JSON output
+    </ParamField>
+    
+    <ParamField body="prompt" type="string">
+      The prompt to use for the JSON output
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates if the request was successful
+</ResponseField>
+
+<ResponseField name="id" type="string">
+  ID of the research job (UUID format)
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.firecrawl.dev/v1/deep-research \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Latest developments in quantum computing",
+    "maxDepth": 5,
+    "timeLimit": 180,
+    "maxUrls": 15
+  }'
+```
+
+```python Python
+from firecrawl import FirecrawlApp
+
+app = FirecrawlApp(api_key='YOUR_API_KEY')
+
+result = app.deep_research(
+    query="Latest developments in quantum computing",
+    max_depth=5,
+    time_limit=180,
+    max_urls=15
+)
+
+print(f"Research job ID: {result['id']}")
+```
+
+```javascript JavaScript
+import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({ apiKey: 'YOUR_API_KEY' });
+
+const result = await app.deepResearch({
+  query: 'Latest developments in quantum computing',
+  maxDepth: 5,
+  timeLimit: 180,
+  maxUrls: 15
+});
+
+console.log(`Research job ID: ${result.id}`);
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json
+{
+  "success": true,
+  "id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+## Error Responses
+
+<ResponseField name="400 Bad Request" type="object">
+  Invalid request parameters
+  
+  ```json
+  {
+    "success": false,
+    "error": "Invalid parameters provided"
+  }
+  ```
+</ResponseField>
+
+## Next Steps
+
+After starting a research job, use the [Get Research Status](/api-reference/research/get-research-status) endpoint to check the progress and retrieve results.

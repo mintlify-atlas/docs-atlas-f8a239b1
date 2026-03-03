@@ -1,122 +1,151 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Firecrawl",
+  "theme": "aspen",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#FF6B35",
+    "light": "#FFB088",
+    "dark": "#D84315"
   },
-  "favicon": "/favicon.svg",
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/firecrawl/firecrawl"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/firecrawl/firecrawl"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Getting Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "authentication"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Features",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "features/scrape",
+              "features/crawl",
+              "features/map",
+              "features/search",
+              "features/agent",
+              "features/batch-scrape"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Advanced",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "advanced/actions",
+              "advanced/formats",
+              "advanced/webhooks",
+              "advanced/pagination",
+              "advanced/error-handling"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Self-Hosting",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "self-hosting/overview",
+              "self-hosting/setup",
+              "self-hosting/configuration"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Overview",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/introduction",
+              "api-reference/rate-limits"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Scraping",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/scraping/scrape",
+              "api-reference/scraping/batch-scrape",
+              "api-reference/scraping/get-batch-status",
+              "api-reference/scraping/cancel-batch",
+              "api-reference/scraping/get-batch-errors"
+            ]
+          },
+          {
+            "group": "Crawling",
+            "pages": [
+              "api-reference/crawling/crawl",
+              "api-reference/crawling/get-crawl-status",
+              "api-reference/crawling/cancel-crawl",
+              "api-reference/crawling/get-crawl-errors",
+              "api-reference/crawling/get-active-crawls"
+            ]
+          },
+          {
+            "group": "Mapping",
+            "pages": [
+              "api-reference/mapping/map"
+            ]
+          },
+          {
+            "group": "Search",
+            "pages": [
+              "api-reference/search/search"
+            ]
+          },
+          {
+            "group": "Agent",
+            "pages": [
+              "api-reference/agent/agent"
+            ]
+          },
+          {
+            "group": "Research",
+            "pages": [
+              "api-reference/research/deep-research",
+              "api-reference/research/get-research-status"
+            ]
+          },
+          {
+            "group": "Billing",
+            "pages": [
+              "api-reference/billing/get-credit-usage"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "SDKs",
+        "groups": [
+          {
+            "group": "Official SDKs",
+            "pages": [
+              "sdks/python",
+              "sdks/javascript",
+              "sdks/rust",
+              "sdks/java"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "sdks/cli",
+              "sdks/mcp-server"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

@@ -1,0 +1,459 @@
+---
+title: Python SDK
+description: Official Python SDK for Firecrawl - scrape, crawl, and extract web data for AI applications
+---
+
+The Firecrawl Python SDK provides a simple interface for scraping, crawling, and extracting structured data from websites. It automatically handles polling for async operations and provides both sync and async client options.
+
+## Installation
+
+Install the SDK using pip:
+
+```bash
+pip install firecrawl-py
+```
+
+## Quick Start
+
+```python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# Scrape a single page
+data = app.scrape('https://firecrawl.dev', formats=['markdown', 'html'])
+print(data.markdown)
+```
+
+## Authentication
+
+Get your API key from [firecrawl.dev](https://firecrawl.dev) and set it as an environment variable or pass it directly:
+
+```python
+# Option 1: Environment variable
+import os
+os.environ["FIRECRAWL_API_KEY"] = "fc-YOUR_API_KEY"
+app = Firecrawl()
+
+# Option 2: Direct parameter
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+```
+
+## Scraping
+
+### Basic Scrape
+
+Scrape a single URL and get content in various formats:
+
+```python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# Get markdown and HTML
+result = app.scrape(
+    'https://firecrawl.dev',
+    formats=['markdown', 'html']
+)
+
+print(result.markdown)
+print(result.html)
+```
+
+### Structured Data Extraction
+
+Extract structured data using Pydantic models:
+
+```python
+from firecrawl import Firecrawl
+from pydantic import BaseModel
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+class CompanyInfo(BaseModel):
+    company_mission: str
+    is_open_source: bool
+    is_in_yc: bool
+
+result = app.scrape(
+    'https://firecrawl.dev',
+    formats=[{"type": "json", "schema": CompanyInfo.model_json_schema()}]
+)
+
+print(result.json)
+# {"company_mission": "Turn websites into LLM-ready data", "is_open_source": true, "is_in_yc": true}
+```
+
+### Extract with Prompt (No Schema)
+
+```python
+result = app.scrape(
+    'https://firecrawl.dev',
+    formats=[{"type": "json", "prompt": "Extract the company mission"}]
+)
+```
+
+### Additional Formats
+
+```python
+# Get screenshot
+result = app.scrape('https://firecrawl.dev', formats=['screenshot'])
+print(result.screenshot)  # Base64 encoded image
+
+# Get branding information
+result = app.scrape('https://firecrawl.dev', formats=['branding'])
+print(result.branding)  # {"colors": {...}, "fonts": [...], "typography": {...}}
+
+# Get all links
+result = app.scrape('https://firecrawl.dev', formats=['links'])
+print(result.links)
+```
+
+## Crawling
+
+### Basic Crawl (Auto-Wait)
+
+Crawl a website and automatically wait for completion:
+
+```python
+from firecrawl import Firecrawl
+from firecrawl.types import ScrapeOptions
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+crawl_result = app.crawl(
+    'https://firecrawl.dev',
+    limit=100,
+    scrape_options=ScrapeOptions(formats=['markdown', 'html']),
+    poll_interval=30
+)
+
+for doc in crawl_result.data:
+    print(doc.markdown)
+```
+
+### Async Crawl (Manual Polling)
+
+Start a crawl and poll manually:
+
+```python
+# Start the crawl
+crawl_job = app.start_crawl(
+    'https://firecrawl.dev',
+    limit=100,
+    scrape_options=ScrapeOptions(formats=['markdown', 'html'])
+)
+
+print(f"Crawl started with ID: {crawl_job.id}")
+
+# Check status later
+status = app.get_crawl_status(crawl_job.id)
+print(f"Status: {status.status}")
+print(f"Completed: {status.completed}/{status.total}")
+```
+
+### Cancel a Crawl
+
+```python
+cancel_result = app.cancel_crawl(crawl_job.id)
+print(cancel_result)
+```
+
+### Manual Pagination
+
+For large crawls, manually paginate through results:
+
+```python
+from firecrawl.v2.types import PaginationConfig
+
+# Start crawl
+crawl_job = app.start_crawl("https://firecrawl.dev", limit=100)
+
+# Fetch first page
+status = app.get_crawl_status(
+    crawl_job.id,
+    pagination_config=PaginationConfig(auto_paginate=False)
+)
+
+# Get next page if available
+if status.next:
+    page2 = app.get_crawl_status_page(status.next)
+```
+
+### WebSocket Crawling
+
+Watch crawl progress in real-time:
+
+```python
+import nest_asyncio
+nest_asyncio.apply()
+
+# Define event handlers
+def on_document(detail):
+    print("DOC", detail)
+
+def on_error(detail):
+    print("ERR", detail['error'])
+
+def on_done(detail):
+    print("DONE", detail['status'])
+
+async def start_crawl_and_watch():
+    watcher = app.crawl_url_and_watch(
+        'firecrawl.dev',
+        exclude_paths=['blog/*'],
+        limit=5
+    )
+
+    watcher.add_event_listener("document", on_document)
+    watcher.add_event_listener("error", on_error)
+    watcher.add_event_listener("done", on_done)
+
+    await watcher.connect()
+
+await start_crawl_and_watch()
+```
+
+## Agent
+
+Use the AI agent to autonomously gather data from the web:
+
+```python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# Simple prompt-based extraction
+result = app.agent(prompt="Find the founders of Firecrawl")
+print(result.data)
+```
+
+### Agent with Schema
+
+```python
+from pydantic import BaseModel, Field
+from typing import List, Optional
+
+class Founder(BaseModel):
+    name: str = Field(description="Full name of the founder")
+    role: Optional[str] = Field(None, description="Role or position")
+
+class FoundersSchema(BaseModel):
+    founders: List[Founder] = Field(description="List of founders")
+
+result = app.agent(
+    prompt="Find the founders of Firecrawl",
+    schema=FoundersSchema
+)
+
+print(result.data)
+# {
+#   "founders": [
+#     {"name": "Eric Ciarla", "role": "Co-founder"},
+#     {"name": "Nicolas Camara", "role": "Co-founder"},
+#     {"name": "Caleb Peffer", "role": "Co-founder"}
+#   ]
+# }
+```
+
+### Agent with URLs
+
+Focus the agent on specific pages:
+
+```python
+result = app.agent(
+    urls=["https://docs.firecrawl.dev", "https://firecrawl.dev/pricing"],
+    prompt="Compare the features and pricing information"
+)
+```
+
+### Model Selection
+
+```python
+# Use the pro model for complex tasks
+result = app.agent(
+    prompt="Compare enterprise features across Firecrawl, Apify, and ScrapingBee",
+    model="spark-1-pro"
+)
+
+# Default is spark-1-mini (60% cheaper)
+result = app.agent(
+    prompt="What is Firecrawl?",
+    model="spark-1-mini"  # or omit for default
+)
+```
+
+## Map
+
+Generate a list of all URLs on a website:
+
+```python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+map_result = app.map('https://firecrawl.dev')
+print(map_result.links)
+```
+
+### Map with Search
+
+```python
+# Find URLs related to a specific topic
+map_result = app.map(
+    'https://firecrawl.dev',
+    search="pricing"
+)
+# Returns URLs ordered by relevance to "pricing"
+```
+
+## Search
+
+Search the web and optionally scrape results:
+
+```python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+results = app.search(
+    "firecrawl web scraping",
+    limit=5
+)
+
+for result in results.data.web:
+    print(f"{result['title']}: {result['url']}")
+```
+
+### Search with Content Scraping
+
+```python
+results = app.search(
+    "firecrawl web scraping",
+    limit=3,
+    scrape_options={
+        "formats": ["markdown", "links"]
+    }
+)
+```
+
+## Batch Scraping
+
+Scrape multiple URLs in parallel:
+
+```python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# Auto-wait for completion
+batch_result = app.batch_scrape(
+    ["https://firecrawl.dev", "https://docs.firecrawl.dev"],
+    formats=["markdown"]
+)
+
+for doc in batch_result.data:
+    print(doc.metadata.source_url)
+```
+
+### Async Batch Scrape
+
+```python
+# Start batch scrape
+batch_job = app.start_batch_scrape(
+    ["https://firecrawl.dev", "https://docs.firecrawl.dev"],
+    formats=["markdown"]
+)
+
+# Check status later
+status = app.get_batch_scrape_status(batch_job.id)
+print(f"Completed: {status.completed}/{status.total}")
+```
+
+## Async Client
+
+For async operations, use the `AsyncFirecrawl` class:
+
+```python
+from firecrawl import AsyncFirecrawl
+import asyncio
+
+app = AsyncFirecrawl(api_key="fc-YOUR_API_KEY")
+
+async def main():
+    # Async scrape
+    result = await app.scrape(
+        url="https://example.com",
+        formats=['markdown']
+    )
+    print(result.markdown)
+
+    # Async crawl
+    crawl_result = await app.crawl(
+        url="https://example.com",
+        limit=50
+    )
+    print(crawl_result.data)
+
+    # Async agent
+    agent_result = await app.agent(
+        prompt="Find the pricing for this product"
+    )
+    print(agent_result.data)
+
+asyncio.run(main())
+```
+
+## v1 Compatibility
+
+Legacy v1 API is available under `firecrawl.v1`:
+
+```python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# v1 methods (feature-frozen)
+doc_v1 = app.v1.scrape_url('https://firecrawl.dev', formats=['markdown', 'html'])
+crawl_v1 = app.v1.crawl_url('https://firecrawl.dev', limit=100)
+map_v1 = app.v1.map_url('https://firecrawl.dev')
+```
+
+## Error Handling
+
+The SDK raises appropriate exceptions for API errors:
+
+```python
+from firecrawl import Firecrawl
+from firecrawl.v2.utils.error_handler import FirecrawlError
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+try:
+    result = app.scrape('https://example.com')
+except FirecrawlError as e:
+    print(f"Error: {e}")
+except Exception as e:
+    print(f"Unexpected error: {e}")
+```
+
+## Configuration
+
+```python
+from firecrawl import Firecrawl
+
+app = Firecrawl(
+    api_key="fc-YOUR_API_KEY",
+    api_url="https://api.firecrawl.dev",  # Default
+    timeout=60.0,                          # Request timeout in seconds
+    max_retries=3,                         # Max retry attempts
+    backoff_factor=0.5                     # Exponential backoff factor
+)
+```
+
+## Resources
+
+- [PyPI Package](https://pypi.org/project/firecrawl-py/)
+- [GitHub Repository](https://github.com/firecrawl/firecrawl)
+- [API Reference](/api-reference/introduction)
+- [Examples](https://github.com/firecrawl/firecrawl/tree/main/apps/python-sdk/examples)

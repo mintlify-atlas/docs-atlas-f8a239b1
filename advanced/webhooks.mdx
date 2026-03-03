@@ -1,0 +1,472 @@
+---
+title: 'Webhooks'
+description: 'Receive real-time notifications for crawl and batch scrape events via webhooks'
+---
+
+Webhooks allow you to receive real-time notifications about the progress and completion of asynchronous operations like crawls and batch scrapes. Instead of polling for status, Firecrawl will send HTTP POST requests to your specified endpoint.
+
+## Webhook Events
+
+Firecrawl sends webhooks for the following events:
+
+| Event | Description | Triggered For |
+|-------|-------------|---------------|
+| `crawl.started` / `batch_scrape.started` | Job has started processing | Crawl, Batch Scrape |
+| `crawl.page` / `batch_scrape.page` | A single page has been scraped | Crawl, Batch Scrape |
+| `crawl.completed` / `batch_scrape.completed` | Job completed successfully | Crawl, Batch Scrape |
+| `crawl.failed` / `batch_scrape.failed` | Job failed | Crawl, Batch Scrape |
+
+## Setting Up Webhooks
+
+### For Crawls
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+job = app.start_crawl(
+    url="https://docs.firecrawl.dev",
+    limit=100,
+    webhook={
+        "url": "https://your-domain.com/webhook",
+        "headers": {
+            "Authorization": "Bearer your-secret-token"
+        },
+        "metadata": {
+            "user_id": "12345",
+            "project": "documentation"
+        },
+        "events": ["completed", "failed"]  # Optional: filter events
+    }
+)
+
+print(f"Crawl started: {job.id}")
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const job = await app.startCrawl({
+  url: 'https://docs.firecrawl.dev',
+  limit: 100,
+  webhook: {
+    url: 'https://your-domain.com/webhook',
+    headers: {
+      Authorization: 'Bearer your-secret-token'
+    },
+    metadata: {
+      user_id: '12345',
+      project: 'documentation'
+    },
+    events: ['completed', 'failed']  // Optional: filter events
+  }
+});
+
+console.log(`Crawl started: ${job.id}`);
+```
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v2/crawl' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://docs.firecrawl.dev",
+    "limit": 100,
+    "webhook": {
+      "url": "https://your-domain.com/webhook",
+      "headers": {
+        "Authorization": "Bearer your-secret-token"
+      },
+      "metadata": {
+        "user_id": "12345",
+        "project": "documentation"
+      },
+      "events": ["completed", "failed"]
+    },
+    "scrapeOptions": {
+      "formats": ["markdown"]
+    }
+  }'
+```
+</CodeGroup>
+
+### For Batch Scrapes
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+job = app.start_batch_scrape(
+    urls=[
+        "https://firecrawl.dev",
+        "https://docs.firecrawl.dev",
+        "https://firecrawl.dev/pricing"
+    ],
+    formats=["markdown"],
+    webhook={
+        "url": "https://your-domain.com/webhook",
+        "headers": {
+            "Authorization": "Bearer your-secret-token"
+        },
+        "events": ["page", "completed"]
+    }
+)
+
+print(f"Batch scrape started: {job.id}")
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const job = await app.startBatchScrape({
+  urls: [
+    'https://firecrawl.dev',
+    'https://docs.firecrawl.dev',
+    'https://firecrawl.dev/pricing'
+  ],
+  formats: ['markdown'],
+  webhook: {
+    url: 'https://your-domain.com/webhook',
+    headers: {
+      Authorization: 'Bearer your-secret-token'
+    },
+    events: ['page', 'completed']
+  }
+});
+
+console.log(`Batch scrape started: ${job.id}`);
+```
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v2/batch/scrape' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "urls": [
+      "https://firecrawl.dev",
+      "https://docs.firecrawl.dev",
+      "https://firecrawl.dev/pricing"
+    ],
+    "formats": ["markdown"],
+    "webhook": {
+      "url": "https://your-domain.com/webhook",
+      "headers": {
+        "Authorization": "Bearer your-secret-token"
+      },
+      "events": ["page", "completed"]
+    }
+  }'
+```
+</CodeGroup>
+
+## Webhook Configuration
+
+### URL (Required)
+
+The HTTPS endpoint where Firecrawl will send webhook notifications.
+
+```python
+webhook={"url": "https://your-domain.com/webhook"}
+```
+
+<Warning>
+Webhook URLs must use HTTPS. HTTP endpoints are not supported for security reasons.
+</Warning>
+
+### Headers (Optional)
+
+Custom headers to include with webhook requests. Commonly used for authentication.
+
+```python
+webhook={
+    "url": "https://your-domain.com/webhook",
+    "headers": {
+        "Authorization": "Bearer your-secret-token",
+        "X-Custom-Header": "custom-value"
+    }
+}
+```
+
+<Tip>
+Use headers to implement webhook authentication and verify that requests are coming from Firecrawl.
+</Tip>
+
+### Metadata (Optional)
+
+Custom metadata that will be included in all webhook payloads for the job. Useful for tracking context.
+
+```python
+webhook={
+    "url": "https://your-domain.com/webhook",
+    "metadata": {
+        "user_id": "12345",
+        "project": "documentation",
+        "environment": "production"
+    }
+}
+```
+
+### Events (Optional)
+
+Filter which events trigger webhooks. By default, all events are sent.
+
+```python
+webhook={
+    "url": "https://your-domain.com/webhook",
+    "events": ["completed", "failed"]  # Only send completion/failure events
+}
+```
+
+Available events:
+- `started` - Job has started
+- `page` - A page has been scraped (can be high volume)
+- `completed` - Job completed successfully
+- `failed` - Job failed
+
+<Tip>
+If you only need to know when a job finishes, filter to `["completed", "failed"]` to reduce webhook volume.
+</Tip>
+
+## Webhook Payload
+
+Firecrawl sends a POST request to your webhook URL with a JSON payload. The structure depends on the event type.
+
+### Started Event
+
+```json
+{
+  "event": "crawl.started",
+  "id": "123-456-789",
+  "metadata": {
+    "user_id": "12345",
+    "project": "documentation"
+  },
+  "timestamp": "2024-03-15T10:30:00Z"
+}
+```
+
+### Page Event
+
+Sent for each page scraped. Contains the same data as the `/scrape` endpoint response.
+
+```json
+{
+  "event": "crawl.page",
+  "id": "123-456-789",
+  "data": {
+    "markdown": "# Page Title\n\nContent...",
+    "html": "<!DOCTYPE html>...",
+    "metadata": {
+      "title": "Page Title",
+      "sourceURL": "https://docs.firecrawl.dev/page",
+      "statusCode": 200
+    }
+  },
+  "metadata": {
+    "user_id": "12345",
+    "project": "documentation"
+  },
+  "timestamp": "2024-03-15T10:30:05Z"
+}
+```
+
+### Completed Event
+
+```json
+{
+  "event": "crawl.completed",
+  "id": "123-456-789",
+  "status": "completed",
+  "total": 50,
+  "completed": 50,
+  "creditsUsed": 50,
+  "metadata": {
+    "user_id": "12345",
+    "project": "documentation"
+  },
+  "timestamp": "2024-03-15T10:35:00Z"
+}
+```
+
+### Failed Event
+
+```json
+{
+  "event": "crawl.failed",
+  "id": "123-456-789",
+  "status": "failed",
+  "error": "Request timeout after 30000ms",
+  "metadata": {
+    "user_id": "12345",
+    "project": "documentation"
+  },
+  "timestamp": "2024-03-15T10:35:00Z"
+}
+```
+
+## Implementing a Webhook Handler
+
+Here's an example webhook handler implementation:
+
+<CodeGroup>
+```python Python (Flask)
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    # Verify the request (recommended)
+    auth_header = request.headers.get('Authorization')
+    if auth_header != 'Bearer your-secret-token':
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    # Parse the webhook payload
+    data = request.json
+    event = data.get('event')
+    job_id = data.get('id')
+    
+    # Handle different event types
+    if event == 'crawl.started':
+        print(f"Crawl {job_id} started")
+    
+    elif event == 'crawl.page':
+        page_data = data.get('data', {})
+        url = page_data.get('metadata', {}).get('sourceURL')
+        print(f"Scraped page: {url}")
+        # Process the page data...
+    
+    elif event == 'crawl.completed':
+        total = data.get('total')
+        credits = data.get('creditsUsed')
+        print(f"Crawl {job_id} completed: {total} pages, {credits} credits")
+        # Final processing...
+    
+    elif event == 'crawl.failed':
+        error = data.get('error')
+        print(f"Crawl {job_id} failed: {error}")
+        # Error handling...
+    
+    # Always return 200 to acknowledge receipt
+    return jsonify({'status': 'received'}), 200
+
+if __name__ == '__main__':
+    app.run(port=3000)
+```
+
+```javascript Node.js (Express)
+import express from 'express';
+
+const app = express();
+app.use(express.json());
+
+app.post('/webhook', (req, res) => {
+  // Verify the request (recommended)
+  const authHeader = req.headers.authorization;
+  if (authHeader !== 'Bearer your-secret-token') {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  // Parse the webhook payload
+  const { event, id: jobId, data, metadata } = req.body;
+  
+  // Handle different event types
+  switch (event) {
+    case 'crawl.started':
+      console.log(`Crawl ${jobId} started`);
+      break;
+    
+    case 'crawl.page':
+      const url = data?.metadata?.sourceURL;
+      console.log(`Scraped page: ${url}`);
+      // Process the page data...
+      break;
+    
+    case 'crawl.completed':
+      console.log(`Crawl ${jobId} completed: ${req.body.total} pages, ${req.body.creditsUsed} credits`);
+      // Final processing...
+      break;
+    
+    case 'crawl.failed':
+      console.log(`Crawl ${jobId} failed: ${req.body.error}`);
+      // Error handling...
+      break;
+  }
+  
+  // Always return 200 to acknowledge receipt
+  res.status(200).json({ status: 'received' });
+});
+
+app.listen(3000, () => {
+  console.log('Webhook server running on port 3000');
+});
+```
+</CodeGroup>
+
+## Best Practices
+
+<Tip>
+**Return 200 quickly**: Your webhook handler should return a 200 status code as quickly as possible. Process the webhook data asynchronously to avoid timeouts.
+</Tip>
+
+<Tip>
+**Implement authentication**: Use the `headers` option to add authentication tokens, and verify them in your webhook handler.
+</Tip>
+
+<Tip>
+**Handle retries**: Firecrawl will retry failed webhook deliveries. Make your handler idempotent to safely handle duplicate events.
+</Tip>
+
+<Tip>
+**Filter events**: Use the `events` parameter to only receive the events you need, reducing webhook traffic and processing.
+</Tip>
+
+<Warning>
+Webhook endpoints must respond within 30 seconds. Long-running operations should be queued for background processing.
+</Warning>
+
+## Testing Webhooks Locally
+
+To test webhooks during development, you can use tools like [ngrok](https://ngrok.com/) to expose your local server:
+
+```bash
+# Start your webhook server locally
+python webhook_server.py  # or node webhook_server.js
+
+# In another terminal, start ngrok
+ngrok http 3000
+
+# Use the ngrok HTTPS URL in your webhook configuration
+# Example: https://abc123.ngrok.io/webhook
+```
+
+## Troubleshooting
+
+### Webhooks Not Received
+
+1. Verify your endpoint is accessible via HTTPS
+2. Check that your server is returning a 200 status code
+3. Review your event filters - you may be filtering out the events
+4. Check your server logs for incoming requests
+
+### Authentication Failures
+
+1. Verify the `Authorization` header is being sent correctly
+2. Check that your handler is reading the header correctly (header names may be case-insensitive)
+3. Ensure the token matches exactly
+
+### High Volume Issues
+
+If you're receiving too many `page` events:
+
+1. Filter events to only `["completed", "failed"]`
+2. Implement rate limiting in your webhook handler
+3. Process page events asynchronously using a queue

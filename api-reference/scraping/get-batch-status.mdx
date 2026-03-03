@@ -1,0 +1,155 @@
+---
+title: 'Get batch scrape status'
+description: 'Get the status of a batch scrape job'
+---
+
+## Endpoint
+
+<CodeGroup>
+```http
+GET /v1/batch/scrape/{id}
+```
+</CodeGroup>
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token. Include your API key in the Authorization header:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the batch scrape job (UUID format)
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="string">
+  The current status of the batch scrape. Can be `scraping`, `completed`, or `failed`.
+</ResponseField>
+
+<ResponseField name="total" type="integer">
+  The total number of pages that were attempted to be scraped.
+</ResponseField>
+
+<ResponseField name="completed" type="integer">
+  The number of pages that have been successfully scraped.
+</ResponseField>
+
+<ResponseField name="creditsUsed" type="integer">
+  The number of credits used for the batch scrape.
+</ResponseField>
+
+<ResponseField name="expiresAt" type="string">
+  The date and time when the batch scrape will expire (ISO 8601 format).
+</ResponseField>
+
+<ResponseField name="next" type="string">
+  The URL to retrieve the next 10MB of data. Returned if the batch scrape is not completed or if the response is larger than 10MB.
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  The data of the batch scrape.
+  <Expandable title="items">
+    <ResponseField name="markdown" type="string">
+      The main content in markdown format
+    </ResponseField>
+    <ResponseField name="html" type="string">
+      HTML version of the content on page if `includeHtml` is true
+    </ResponseField>
+    <ResponseField name="rawHtml" type="string">
+      Raw HTML content of the page if `includeRawHtml` is true
+    </ResponseField>
+    <ResponseField name="links" type="array">
+      List of links on the page if `includeLinks` is true
+    </ResponseField>
+    <ResponseField name="screenshot" type="string">
+      Screenshot of the page if `includeScreenshot` is true
+    </ResponseField>
+    <ResponseField name="metadata" type="object">
+      Page metadata including title, description, sourceURL, statusCode, and other properties
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+```bash cURL
+curl -X GET https://api.firecrawl.dev/v1/batch/scrape/550e8400-e29b-41d4-a716-446655440000 \
+  -H 'Authorization: Bearer YOUR_API_KEY'
+```
+
+```python Python
+from firecrawl import FirecrawlApp
+
+app = FirecrawlApp(api_key='YOUR_API_KEY')
+
+job_id = '550e8400-e29b-41d4-a716-446655440000'
+status = app.get_batch_scrape_status(job_id)
+
+print(f"Status: {status['status']}")
+print(f"Completed: {status['completed']}/{status['total']}")
+print(f"Credits used: {status['creditsUsed']}")
+
+if status['status'] == 'completed':
+    for page in status['data']:
+        print(f"URL: {page['metadata']['sourceURL']}")
+        print(f"Content: {page['markdown'][:100]}...")
+```
+
+```javascript JavaScript
+import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({ apiKey: 'YOUR_API_KEY' });
+
+const jobId = '550e8400-e29b-41d4-a716-446655440000';
+const status = await app.getBatchScrapeStatus(jobId);
+
+console.log(`Status: ${status.status}`);
+console.log(`Completed: ${status.completed}/${status.total}`);
+console.log(`Credits used: ${status.creditsUsed}`);
+
+if (status.status === 'completed') {
+  status.data.forEach(page => {
+    console.log(`URL: ${page.metadata.sourceURL}`);
+    console.log(`Content: ${page.markdown.substring(0, 100)}...`);
+  });
+}
+```
+</CodeGroup>
+
+## Error Responses
+
+<ResponseField name="402" type="object">
+  **Payment Required** - Payment required to access this resource.
+  
+  ```json
+  {
+    "error": "Payment required to access this resource."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="429" type="object">
+  **Too Many Requests** - Request rate limit exceeded.
+  
+  ```json
+  {
+    "error": "Request rate limit exceeded. Please wait and try again later."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  **Server Error** - An unexpected error occurred on the server.
+  
+  ```json
+  {
+    "error": "An unexpected error occurred on the server."
+  }
+  ```
+</ResponseField>

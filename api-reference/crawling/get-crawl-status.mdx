@@ -1,0 +1,201 @@
+---
+title: 'Get Crawl Status'
+description: 'Get the status and results of a crawl job'
+---
+
+## GET /v1/crawl/{id}
+
+Retrieve the status and results of a crawl job using its ID.
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token. Include your API key in the `Authorization` header:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the crawl job (UUID format)
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="string">
+  The current status of the crawl. Can be `scraping`, `completed`, or `failed`.
+</ResponseField>
+
+<ResponseField name="total" type="integer">
+  The total number of pages that were attempted to be crawled.
+</ResponseField>
+
+<ResponseField name="completed" type="integer">
+  The number of pages that have been successfully crawled.
+</ResponseField>
+
+<ResponseField name="creditsUsed" type="integer">
+  The number of credits used for the crawl.
+</ResponseField>
+
+<ResponseField name="expiresAt" type="string">
+  The date and time when the crawl will expire (ISO 8601 format).
+</ResponseField>
+
+<ResponseField name="next" type="string">
+  The URL to retrieve the next 10MB of data. Returned if the crawl is not completed or if the response is larger than 10MB.
+</ResponseField>
+
+<ResponseField name="data" type="array">
+  The crawled page data. Each item contains:
+  
+  <Expandable title="data item properties">
+    <ResponseField name="markdown" type="string">
+      Markdown content of the page
+    </ResponseField>
+    
+    <ResponseField name="html" type="string">
+      HTML version of the content if requested in formats
+    </ResponseField>
+    
+    <ResponseField name="rawHtml" type="string">
+      Raw HTML content of the page if requested in formats
+    </ResponseField>
+    
+    <ResponseField name="links" type="array">
+      List of links found on the page if requested in formats
+    </ResponseField>
+    
+    <ResponseField name="screenshot" type="string">
+      Screenshot URL if requested in formats
+    </ResponseField>
+    
+    <ResponseField name="metadata" type="object">
+      Page metadata including:
+      - `title`: Page title
+      - `description`: Page description
+      - `language`: Page language
+      - `sourceURL`: Original URL
+      - `statusCode`: HTTP status code
+      - `timezone`: Inferred timezone
+      - `error`: Error message if any
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://api.firecrawl.dev/v1/crawl/123e4567-e89b-12d3-a456-426614174000 \
+  -H 'Authorization: Bearer YOUR_API_KEY'
+```
+
+```python Python
+from firecrawl import FirecrawlApp
+
+app = FirecrawlApp(api_key="YOUR_API_KEY")
+
+# Get crawl status
+status = app.check_crawl_status("123e4567-e89b-12d3-a456-426614174000")
+
+print(f"Status: {status['status']}")
+print(f"Completed: {status['completed']}/{status['total']}")
+print(f"Credits used: {status['creditsUsed']}")
+
+# Access crawled data
+if status['status'] == 'completed':
+    for page in status['data']:
+        print(f"URL: {page['metadata']['sourceURL']}")
+        print(f"Title: {page['metadata']['title']}")
+```
+
+```javascript JavaScript
+import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({ apiKey: 'YOUR_API_KEY' });
+
+// Get crawl status
+const status = await app.checkCrawlStatus('123e4567-e89b-12d3-a456-426614174000');
+
+console.log(`Status: ${status.status}`);
+console.log(`Completed: ${status.completed}/${status.total}`);
+console.log(`Credits used: ${status.creditsUsed}`);
+
+// Access crawled data
+if (status.status === 'completed') {
+  status.data.forEach(page => {
+    console.log(`URL: ${page.metadata.sourceURL}`);
+    console.log(`Title: ${page.metadata.title}`);
+  });
+}
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json
+{
+  "status": "completed",
+  "total": 42,
+  "completed": 42,
+  "creditsUsed": 84,
+  "expiresAt": "2026-03-10T12:00:00.000Z",
+  "next": null,
+  "data": [
+    {
+      "markdown": "# Example Page\n\nThis is the content...",
+      "html": "<h1>Example Page</h1><p>This is the content...</p>",
+      "links": ["https://example.com/page1", "https://example.com/page2"],
+      "metadata": {
+        "title": "Example Page",
+        "description": "An example page description",
+        "language": "en",
+        "sourceURL": "https://example.com/page",
+        "statusCode": 200,
+        "timezone": "America/New_York",
+        "error": null
+      }
+    }
+  ]
+}
+```
+
+## Error Responses
+
+<ResponseField name="402 Payment Required">
+  ```json
+  {
+    "error": "Payment required to access this resource."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="429 Too Many Requests">
+  ```json
+  {
+    "error": "Request rate limit exceeded. Please wait and try again later."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500 Server Error">
+  ```json
+  {
+    "error": "An unexpected error occurred on the server."
+  }
+  ```
+</ResponseField>
+
+## Pagination
+
+If the response data exceeds 10MB, the `next` field will contain a URL to retrieve the next batch of results. Continue fetching using the `next` URL until it becomes `null`.
+
+## Status Values
+
+- **scraping**: The crawl is currently in progress
+- **completed**: The crawl has finished successfully
+- **failed**: The crawl encountered an error and stopped

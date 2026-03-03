@@ -1,0 +1,536 @@
+---
+title: 'Error Handling'
+description: 'Handle errors and understand status codes when using the Firecrawl API'
+---
+
+Proper error handling is essential for building robust applications with Firecrawl. This guide covers common errors, HTTP status codes, and best practices for handling failures.
+
+## HTTP Status Codes
+
+Firecrawl uses standard HTTP status codes to indicate success or failure:
+
+| Status Code | Meaning | Description |
+|-------------|---------|-------------|
+| `200` | OK | Request successful |
+| `400` | Bad Request | Invalid request parameters |
+| `401` | Unauthorized | Invalid or missing API key |
+| `402` | Payment Required | Insufficient credits or payment required |
+| `404` | Not Found | Resource not found (e.g., invalid job ID) |
+| `408` | Request Timeout | Request took too long to complete |
+| `429` | Too Many Requests | Rate limit exceeded |
+| `500` | Internal Server Error | Unexpected server error |
+
+## Common Errors
+
+### 400 Bad Request
+
+Invalid parameters or malformed request body.
+
+```json
+{
+  "success": false,
+  "error": "Invalid input data."
+}
+```
+
+**Common causes:**
+- Invalid URL format
+- Missing required parameters
+- Invalid parameter values
+- Malformed JSON schema
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+try:
+    doc = app.scrape("not-a-valid-url", formats=["markdown"])
+except Exception as e:
+    print(f"Error: {e}")
+    # Handle invalid URL
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+try {
+  const doc = await app.scrape({
+    url: 'not-a-valid-url',
+    formats: ['markdown']
+  });
+} catch (error) {
+  console.error(`Error: ${error.message}`);
+  // Handle invalid URL
+}
+```
+</CodeGroup>
+
+### 401 Unauthorized
+
+Invalid or missing API key.
+
+```json
+{
+  "success": false,
+  "error": "Unauthorized: Invalid API key"
+}
+```
+
+**Solutions:**
+- Verify your API key is correct
+- Ensure the `Authorization` header is properly formatted: `Bearer fc-YOUR_API_KEY`
+- Check that your API key hasn't been revoked
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+try:
+    app = Firecrawl(api_key="invalid-key")
+    doc = app.scrape("https://firecrawl.dev")
+except Exception as e:
+    if "Unauthorized" in str(e) or "401" in str(e):
+        print("Invalid API key. Please check your credentials.")
+    else:
+        raise
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+try {
+  const app = new Firecrawl({ apiKey: 'invalid-key' });
+  const doc = await app.scrape({ url: 'https://firecrawl.dev' });
+} catch (error) {
+  if (error.message.includes('Unauthorized') || error.message.includes('401')) {
+    console.error('Invalid API key. Please check your credentials.');
+  } else {
+    throw error;
+  }
+}
+```
+</CodeGroup>
+
+### 402 Payment Required
+
+Insufficient credits or payment method required.
+
+```json
+{
+  "success": false,
+  "error": "Payment required to access this resource."
+}
+```
+
+**Solutions:**
+- Add credits to your account at [firecrawl.dev/billing](https://firecrawl.dev/billing)
+- Upgrade your plan for higher limits
+- Check your credit usage at [firecrawl.dev/usage](https://firecrawl.dev/usage)
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+try:
+    doc = app.scrape("https://example.com")
+except Exception as e:
+    if "402" in str(e) or "Payment required" in str(e):
+        print("Insufficient credits. Please add credits to your account.")
+        print("Visit: https://firecrawl.dev/billing")
+    else:
+        raise
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+try {
+  const doc = await app.scrape({ url: 'https://example.com' });
+} catch (error) {
+  if (error.message.includes('402') || error.message.includes('Payment required')) {
+    console.error('Insufficient credits. Please add credits to your account.');
+    console.error('Visit: https://firecrawl.dev/billing');
+  } else {
+    throw error;
+  }
+}
+```
+</CodeGroup>
+
+### 404 Not Found
+
+Resource not found (e.g., invalid job ID).
+
+```json
+{
+  "success": false,
+  "error": "Crawl job not found."
+}
+```
+
+**Common causes:**
+- Invalid or expired job ID
+- Job ID from a different account
+- Typo in the job ID
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+try:
+    status = app.get_crawl_status("invalid-job-id")
+except Exception as e:
+    if "404" in str(e) or "not found" in str(e).lower():
+        print("Job not found. Please check the job ID.")
+    else:
+        raise
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+try {
+  const status = await app.getCrawlStatus('invalid-job-id');
+} catch (error) {
+  if (error.message.includes('404') || error.message.toLowerCase().includes('not found')) {
+    console.error('Job not found. Please check the job ID.');
+  } else {
+    throw error;
+  }
+}
+```
+</CodeGroup>
+
+### 408 Request Timeout
+
+Request took too long to complete.
+
+```json
+{
+  "success": false,
+  "error": "Request timed out"
+}
+```
+
+**Solutions:**
+- Increase the `timeout` parameter in your request
+- For large sites, use the asynchronous crawl API instead of synchronous scrape
+- Split large batch scrapes into smaller batches
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+try:
+    # Increase timeout to 60 seconds
+    doc = app.scrape(
+        "https://slow-site.com",
+        formats=["markdown"],
+        timeout=60000
+    )
+except Exception as e:
+    if "408" in str(e) or "timeout" in str(e).lower():
+        print("Request timed out. Consider using async crawl for large sites.")
+    else:
+        raise
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+try {
+  // Increase timeout to 60 seconds
+  const doc = await app.scrape({
+    url: 'https://slow-site.com',
+    formats: ['markdown'],
+    timeout: 60000
+  });
+} catch (error) {
+  if (error.message.includes('408') || error.message.toLowerCase().includes('timeout')) {
+    console.error('Request timed out. Consider using async crawl for large sites.');
+  } else {
+    throw error;
+  }
+}
+```
+</CodeGroup>
+
+### 429 Too Many Requests
+
+Rate limit exceeded.
+
+```json
+{
+  "success": false,
+  "error": "Request rate limit exceeded. Please wait and try again later."
+}
+```
+
+**Solutions:**
+- Implement exponential backoff and retry logic
+- Reduce request frequency
+- Upgrade to a higher plan with increased rate limits
+- Use the `delay` parameter in crawl requests to respect rate limits
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+import time
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+def scrape_with_retry(url, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            return app.scrape(url, formats=["markdown"])
+        except Exception as e:
+            if "429" in str(e) or "rate limit" in str(e).lower():
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt  # Exponential backoff
+                    print(f"Rate limited. Waiting {wait_time}s before retry...")
+                    time.sleep(wait_time)
+                else:
+                    print("Max retries reached. Rate limit still in effect.")
+                    raise
+            else:
+                raise
+
+doc = scrape_with_retry("https://example.com")
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+async function scrapeWithRetry(url, maxRetries = 3) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await app.scrape({ url, formats: ['markdown'] });
+    } catch (error) {
+      if (error.message.includes('429') || error.message.toLowerCase().includes('rate limit')) {
+        if (attempt < maxRetries - 1) {
+          const waitTime = Math.pow(2, attempt) * 1000;  // Exponential backoff
+          console.error(`Rate limited. Waiting ${waitTime}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        } else {
+          console.error('Max retries reached. Rate limit still in effect.');
+          throw error;
+        }
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
+const doc = await scrapeWithRetry('https://example.com');
+```
+</CodeGroup>
+
+### 500 Internal Server Error
+
+Unexpected server error.
+
+```json
+{
+  "success": false,
+  "error": "An unexpected error occurred on the server."
+}
+```
+
+**Solutions:**
+- Retry the request after a short delay
+- Check [status.firecrawl.dev](https://status.firecrawl.dev) for service status
+- Contact support if the error persists
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+import time
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+try:
+    doc = app.scrape("https://example.com")
+except Exception as e:
+    if "500" in str(e):
+        print("Server error. Retrying in 5 seconds...")
+        time.sleep(5)
+        doc = app.scrape("https://example.com")  # Retry once
+    else:
+        raise
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+try {
+  const doc = await app.scrape({ url: 'https://example.com' });
+} catch (error) {
+  if (error.message.includes('500')) {
+    console.error('Server error. Retrying in 5 seconds...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    const doc = await app.scrape({ url: 'https://example.com' });  // Retry once
+  } else {
+    throw error;
+  }
+}
+```
+</CodeGroup>
+
+## Per-Page Errors in Crawls
+
+During crawls, individual pages may fail while the overall job succeeds. These errors are available in the metadata:
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+crawl_result = app.crawl("https://example.com", limit=50)
+
+for doc in crawl_result.data:
+    if doc.metadata.get('error'):
+        print(f"Error on {doc.metadata.get('sourceURL')}: {doc.metadata.get('error')}")
+    else:
+        print(f"Success: {doc.metadata.get('sourceURL')}")
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const crawlResult = await app.crawl({
+  url: 'https://example.com',
+  limit: 50
+});
+
+crawlResult.data.forEach(doc => {
+  if (doc.metadata.error) {
+    console.error(`Error on ${doc.metadata.sourceURL}: ${doc.metadata.error}`);
+  } else {
+    console.log(`Success: ${doc.metadata.sourceURL}`);
+  }
+});
+```
+</CodeGroup>
+
+## Retrieving Crawl Errors
+
+You can fetch a detailed list of errors for a crawl job:
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+job = app.start_crawl("https://example.com", limit=100)
+
+# Wait for completion...
+status = app.get_crawl_status(job.id)
+
+if status.status == "completed":
+    # Get errors using the API directly
+    import requests
+    response = requests.get(
+        f"https://api.firecrawl.dev/v2/crawl/{job.id}/errors",
+        headers={"Authorization": f"Bearer {app.api_key}"}
+    )
+    errors = response.json()
+    print(f"Total errors: {len(errors.get('data', []))}")
+    for error in errors.get('data', []):
+        print(f"- {error['url']}: {error['error']}")
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+import fetch from 'node-fetch';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const job = await app.startCrawl({
+  url: 'https://example.com',
+  limit: 100
+});
+
+// Wait for completion...
+const status = await app.getCrawlStatus(job.id);
+
+if (status.status === 'completed') {
+  // Get errors using the API directly
+  const response = await fetch(
+    `https://api.firecrawl.dev/v2/crawl/${job.id}/errors`,
+    {
+      headers: { Authorization: `Bearer ${app.apiKey}` }
+    }
+  );
+  const errors = await response.json();
+  console.log(`Total errors: ${errors.data?.length || 0}`);
+  errors.data?.forEach(error => {
+    console.error(`- ${error.url}: ${error.error}`);
+  });
+}
+```
+
+```bash cURL
+curl -X GET 'https://api.firecrawl.dev/v2/crawl/123-456-789/errors' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY'
+```
+</CodeGroup>
+
+## Best Practices
+
+<Tip>
+**Implement retry logic**: Use exponential backoff for transient errors like rate limits and server errors.
+</Tip>
+
+<Tip>
+**Log errors with context**: Include the URL, timestamp, and error details to help with debugging.
+</Tip>
+
+<Tip>
+**Monitor credit usage**: Check your remaining credits regularly to avoid 402 errors mid-operation.
+</Tip>
+
+<Tip>
+**Validate inputs**: Check URLs and parameters before making API calls to avoid 400 errors.
+</Tip>
+
+<Warning>
+Don't retry 400 (Bad Request) or 401 (Unauthorized) errors automatically. These indicate issues with your request that won't be fixed by retrying.
+</Warning>
+
+<Warning>
+Always handle the `error` field in page metadata during crawls, as individual pages may fail even if the overall crawl succeeds.
+</Warning>
+
+## Getting Help
+
+If you encounter persistent errors:
+
+1. Check the [Firecrawl status page](https://status.firecrawl.dev) for service issues
+2. Review the [API documentation](https://docs.firecrawl.dev/api-reference) for parameter requirements
+3. Join the [Discord community](https://discord.com/invite/gSmWdAkdwd) for community support
+4. Contact [support@firecrawl.dev](mailto:support@firecrawl.dev) for direct assistance

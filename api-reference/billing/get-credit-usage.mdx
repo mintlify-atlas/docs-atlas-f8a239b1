@@ -1,0 +1,112 @@
+---
+title: 'Get Credit Usage'
+description: 'Get remaining credits for the authenticated team'
+---
+
+## GET /v1/team/credit-usage
+
+Retrieve the number of remaining credits for your team. Credits are consumed when using Firecrawl API endpoints.
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token in the Authorization header.
+
+```bash
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates if the request was successful
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Credit usage data
+  
+  <Expandable title="properties">
+    <ResponseField name="remaining_credits" type="number">
+      Number of credits remaining for the team
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://api.firecrawl.dev/v1/team/credit-usage \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+from firecrawl import FirecrawlApp
+
+app = FirecrawlApp(api_key='YOUR_API_KEY')
+
+credit_usage = app.get_credit_usage()
+
+print(f"Remaining credits: {credit_usage['data']['remaining_credits']}")
+```
+
+```javascript JavaScript
+import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({ apiKey: 'YOUR_API_KEY' });
+
+const creditUsage = await app.getCreditUsage();
+
+console.log(`Remaining credits: ${creditUsage.data.remaining_credits}`);
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "remaining_credits": 1000
+  }
+}
+```
+
+## Error Responses
+
+<ResponseField name="404 Not Found" type="object">
+  Credit usage information not found
+  
+  ```json
+  {
+    "success": false,
+    "error": "Could not find credit usage information"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500 Internal Server Error" type="object">
+  Server error while fetching credit usage
+  
+  ```json
+  {
+    "success": false,
+    "error": "Internal server error while fetching credit usage"
+  }
+  ```
+</ResponseField>
+
+## Credit Consumption
+
+Different API endpoints consume different amounts of credits:
+
+- **Scrape**: 1 credit per page
+- **Batch Scrape**: 1 credit per page
+- **Crawl**: 1 credit per page crawled
+- **Map**: Credits based on pages discovered
+- **Extract**: Credits based on pages processed
+- **Deep Research**: Credits based on URLs analyzed
+- **Search**: Credits based on results returned
+
+Monitor your credit usage regularly to ensure uninterrupted service.

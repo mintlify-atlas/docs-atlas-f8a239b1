@@ -1,0 +1,184 @@
+---
+title: 'Get Crawl Errors'
+description: 'Retrieve errors that occurred during a crawl job'
+---
+
+## GET /v1/crawl/{id}/errors
+
+Get detailed information about errors that occurred during a crawl job.
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token. Include your API key in the `Authorization` header:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the crawl job (UUID format)
+</ParamField>
+
+## Response
+
+<ResponseField name="errors" type="array">
+  Errored scrape jobs and error details. Each error object contains:
+  
+  <Expandable title="error properties">
+    <ResponseField name="id" type="string">
+      The unique identifier of the failed scrape job
+    </ResponseField>
+    
+    <ResponseField name="timestamp" type="string">
+      ISO timestamp of when the failure occurred
+    </ResponseField>
+    
+    <ResponseField name="url" type="string">
+      The URL that failed to be scraped
+    </ResponseField>
+    
+    <ResponseField name="error" type="string">
+      Error message describing what went wrong
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="robotsBlocked" type="array">
+  List of URLs that were attempted in scraping but were blocked by robots.txt
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://api.firecrawl.dev/v1/crawl/123e4567-e89b-12d3-a456-426614174000/errors \
+  -H 'Authorization: Bearer YOUR_API_KEY'
+```
+
+```python Python
+from firecrawl import FirecrawlApp
+import requests
+
+app = FirecrawlApp(api_key="YOUR_API_KEY")
+
+# Get crawl errors
+crawl_id = "123e4567-e89b-12d3-a456-426614174000"
+response = requests.get(
+    f"https://api.firecrawl.dev/v1/crawl/{crawl_id}/errors",
+    headers={"Authorization": f"Bearer {app.api_key}"}
+)
+errors = response.json()
+
+print(f"Total errors: {len(errors['errors'])}")
+for error in errors['errors']:
+    print(f"URL: {error['url']}")
+    print(f"Error: {error['error']}")
+    print(f"Timestamp: {error['timestamp']}")
+    print()
+
+if errors['robotsBlocked']:
+    print(f"Robots.txt blocked {len(errors['robotsBlocked'])} URLs")
+```
+
+```javascript JavaScript
+import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({ apiKey: 'YOUR_API_KEY' });
+
+// Get crawl errors
+const crawlId = '123e4567-e89b-12d3-a456-426614174000';
+const response = await fetch(
+  `https://api.firecrawl.dev/v1/crawl/${crawlId}/errors`,
+  {
+    headers: {
+      'Authorization': `Bearer ${app.apiKey}`
+    }
+  }
+);
+const errors = await response.json();
+
+console.log(`Total errors: ${errors.errors.length}`);
+errors.errors.forEach(error => {
+  console.log(`URL: ${error.url}`);
+  console.log(`Error: ${error.error}`);
+  console.log(`Timestamp: ${error.timestamp}`);
+  console.log();
+});
+
+if (errors.robotsBlocked.length > 0) {
+  console.log(`Robots.txt blocked ${errors.robotsBlocked.length} URLs`);
+}
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json
+{
+  "errors": [
+    {
+      "id": "error-123",
+      "timestamp": "2026-03-03T10:30:45.000Z",
+      "url": "https://example.com/broken-page",
+      "error": "404 Not Found"
+    },
+    {
+      "id": "error-124",
+      "timestamp": "2026-03-03T10:31:12.000Z",
+      "url": "https://example.com/timeout-page",
+      "error": "Request timeout after 30000ms"
+    }
+  ],
+  "robotsBlocked": [
+    "https://example.com/admin",
+    "https://example.com/private"
+  ]
+}
+```
+
+## Error Responses
+
+<ResponseField name="402 Payment Required">
+  ```json
+  {
+    "error": "Payment required to access this resource."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="429 Too Many Requests">
+  ```json
+  {
+    "error": "Request rate limit exceeded. Please wait and try again later."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500 Server Error">
+  ```json
+  {
+    "error": "An unexpected error occurred on the server."
+  }
+  ```
+</ResponseField>
+
+## Common Error Types
+
+- **404 Not Found**: The URL doesn't exist or has been removed
+- **403 Forbidden**: Access to the URL is forbidden
+- **Timeout**: The page took too long to load
+- **SSL/TLS errors**: Certificate validation failed
+- **Network errors**: Connection issues or DNS failures
+- **Robots.txt blocks**: URLs blocked by the site's robots.txt file (listed separately)
+
+## Use Cases
+
+- Debug why certain pages weren't crawled
+- Identify problematic URLs in your crawl
+- Monitor robots.txt restrictions
+- Track down broken links or access issues
+- Improve crawl configuration based on error patterns

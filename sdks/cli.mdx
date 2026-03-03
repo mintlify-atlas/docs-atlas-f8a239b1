@@ -1,0 +1,376 @@
+---
+title: CLI & Skill
+description: Firecrawl CLI and AI agent skill for seamless web scraping integration
+---
+
+The Firecrawl CLI provides command-line access to the Firecrawl API, while the Firecrawl Skill enables AI agents like Claude Code, Codex, and OpenCode to use Firecrawl automatically.
+
+## Installation
+
+Install the Firecrawl skill to enable CLI and AI agent integration:
+
+```bash
+npx skills add firecrawl/cli
+```
+
+After installation, restart your AI agent to activate the skill.
+
+## What is the Firecrawl Skill?
+
+The Firecrawl skill is a tool that allows AI coding agents to:
+
+- Automatically scrape web pages when you ask questions about websites
+- Crawl entire sites to gather context for development tasks
+- Search the web for current information
+- Extract structured data from pages
+- Use the Agent feature for autonomous web research
+
+Once installed, you can simply ask your AI agent to "scrape the documentation from example.com" or "find the latest pricing from their website", and it will use Firecrawl automatically.
+
+## CLI Usage
+
+The CLI is also available directly after installing the skill.
+
+### Authentication
+
+Set your API key as an environment variable:
+
+```bash
+export FIRECRAWL_API_KEY="fc-YOUR_API_KEY"
+```
+
+Get your API key from [firecrawl.dev](https://firecrawl.dev).
+
+### Scrape a URL
+
+```bash
+firecrawl scrape https://firecrawl.dev
+```
+
+With options:
+
+```bash
+firecrawl scrape https://firecrawl.dev \
+  --formats markdown,html \
+  --only-main-content
+```
+
+### Crawl a Website
+
+Crawl with automatic wait for completion:
+
+```bash
+firecrawl crawl https://firecrawl.dev --limit 50
+```
+
+With advanced options:
+
+```bash
+firecrawl crawl https://firecrawl.dev \
+  --limit 100 \
+  --exclude-paths "blog/*,admin/*" \
+  --formats markdown
+```
+
+### Map a Website
+
+Discover all URLs:
+
+```bash
+firecrawl map https://firecrawl.dev
+```
+
+Search for specific content:
+
+```bash
+firecrawl map https://firecrawl.dev --search pricing
+```
+
+### Search the Web
+
+```bash
+firecrawl search "firecrawl web scraping" --limit 10
+```
+
+### Use the Agent
+
+Autonomous web research:
+
+```bash
+firecrawl agent "Find the pricing plans for Notion"
+```
+
+With specific URLs:
+
+```bash
+firecrawl agent "Compare the features" \
+  --urls https://notion.so,https://airtable.com
+```
+
+### Batch Scrape
+
+Scrape multiple URLs:
+
+```bash
+firecrawl batch-scrape \
+  https://firecrawl.dev \
+  https://docs.firecrawl.dev \
+  --formats markdown
+```
+
+## Using with AI Agents
+
+Once the skill is installed, you can interact with your AI agent naturally:
+
+### Example Prompts
+
+**Scraping:**
+```
+Scrape the documentation from https://docs.firecrawl.dev and summarize the main features
+```
+
+**Crawling:**
+```
+Crawl the Firecrawl blog and extract all article titles and URLs
+```
+
+**Agent:**
+```
+Find the latest pricing information for Notion, Airtable, and Coda, then compare them
+```
+
+**Search:**
+```
+Search for the best web scraping tools in 2024 and give me a summary
+```
+
+### How It Works
+
+When you ask your AI agent to perform web scraping tasks:
+
+1. The agent recognizes it needs web data
+2. It automatically invokes the Firecrawl skill
+3. Firecrawl fetches the content using your API key
+4. The agent receives clean, LLM-ready data
+5. The agent uses that data to answer your question
+
+No manual intervention required!
+
+## Supported Agents
+
+The Firecrawl skill works with:
+
+- **Claude Code** (Anthropic)
+- **OpenCode** (open-source coding agent)
+- **Codex** (GitHub Copilot)
+- Any agent that supports the Skills protocol
+
+## Configuration
+
+### Environment Variables
+
+```bash
+# Required: Your Firecrawl API key
+export FIRECRAWL_API_KEY="fc-YOUR_API_KEY"
+
+# Optional: Custom API URL (for self-hosted)
+export FIRECRAWL_API_URL="https://api.firecrawl.dev"
+```
+
+### Skill Configuration
+
+The skill can be configured via `~/.config/firecrawl/config.json`:
+
+```json
+{
+  "apiKey": "fc-YOUR_API_KEY",
+  "apiUrl": "https://api.firecrawl.dev",
+  "defaultFormats": ["markdown"],
+  "maxCrawlLimit": 100
+}
+```
+
+## CLI Reference
+
+### Global Flags
+
+- `--api-key` - Your Firecrawl API key (overrides environment variable)
+- `--api-url` - Custom API URL
+- `--output` - Output file path (default: stdout)
+- `--format` - Output format: `json`, `markdown`, `text`
+- `--quiet` - Suppress progress messages
+- `--help` - Show help
+
+### Commands
+
+#### `scrape <url>`
+
+Scrape a single URL.
+
+**Options:**
+- `--formats` - Output formats (comma-separated): `markdown`, `html`, `screenshot`, `links`, `json`
+- `--only-main-content` - Extract only main content
+- `--include-tags` - HTML tags to include
+- `--exclude-tags` - HTML tags to exclude
+- `--wait-for` - Wait time in milliseconds
+
+#### `crawl <url>`
+
+Crawl a website.
+
+**Options:**
+- `--limit` - Max pages to crawl
+- `--max-depth` - Maximum discovery depth
+- `--exclude-paths` - Paths to exclude (comma-separated)
+- `--include-paths` - Paths to include (comma-separated)
+- `--formats` - Output formats
+- `--poll-interval` - Polling interval in seconds
+
+#### `map <url>`
+
+Map all URLs on a website.
+
+**Options:**
+- `--search` - Search query to filter URLs
+- `--limit` - Max URLs to return
+- `--include-subdomains` - Include subdomains
+
+#### `search <query>`
+
+Search the web.
+
+**Options:**
+- `--limit` - Number of results
+- `--scrape` - Also scrape the results
+- `--formats` - Output formats for scraped content
+
+#### `agent <prompt>`
+
+Run the AI agent.
+
+**Options:**
+- `--urls` - URLs to focus on (comma-separated)
+- `--model` - Model to use: `spark-1-mini`, `spark-1-pro`
+- `--schema` - JSON schema file for structured output
+
+#### `batch-scrape <urls...>`
+
+Scrape multiple URLs.
+
+**Options:**
+- `--formats` - Output formats
+- `--poll-interval` - Polling interval in seconds
+
+## Output Formats
+
+The CLI supports multiple output formats:
+
+### JSON (default)
+
+Structured JSON output:
+
+```bash
+firecrawl scrape https://firecrawl.dev --format json
+```
+
+### Markdown
+
+Clean markdown output:
+
+```bash
+firecrawl scrape https://firecrawl.dev --format markdown
+```
+
+### Text
+
+Plain text output:
+
+```bash
+firecrawl scrape https://firecrawl.dev --format text
+```
+
+## Error Handling
+
+The CLI provides clear error messages:
+
+```bash
+# Missing API key
+Error: FIRECRAWL_API_KEY environment variable not set
+
+# Invalid URL
+Error: Invalid URL format
+
+# Rate limit
+Error: Rate limit exceeded. Please try again later.
+
+# Authentication failed
+Error: Invalid API key
+```
+
+## Examples
+
+### Scrape and Save
+
+```bash
+firecrawl scrape https://firecrawl.dev \
+  --formats markdown \
+  --output firecrawl.md
+```
+
+### Crawl with Filtering
+
+```bash
+firecrawl crawl https://docs.firecrawl.dev \
+  --limit 50 \
+  --include-paths "docs/*" \
+  --exclude-paths "blog/*" \
+  --formats markdown,html \
+  --output crawl-results.json
+```
+
+### Agent Research
+
+```bash
+firecrawl agent "Find the top 3 features of Firecrawl and their pricing" \
+  --model spark-1-pro \
+  --output research.json
+```
+
+### Batch Processing
+
+```bash
+cat urls.txt | xargs firecrawl batch-scrape \
+  --formats markdown \
+  --output batch-results.json
+```
+
+## Updating
+
+Update to the latest version:
+
+```bash
+npx skills update firecrawl/cli
+```
+
+## Uninstalling
+
+Remove the skill:
+
+```bash
+npx skills remove firecrawl/cli
+```
+
+## Resources
+
+- [Skills Protocol](https://github.com/skills/protocol)
+- [GitHub Repository](https://github.com/firecrawl/firecrawl)
+- [API Reference](/api-reference/introduction)
+- [Firecrawl Documentation](https://docs.firecrawl.dev)
+
+## Support
+
+For issues or questions:
+
+- [GitHub Issues](https://github.com/firecrawl/firecrawl/issues)
+- [Discord Community](https://discord.com/invite/gSmWdAkdwd)
+- [Documentation](https://docs.firecrawl.dev)

@@ -1,0 +1,500 @@
+---
+title: 'Output Formats'
+description: 'Customize the output format of your scraped data with markdown, HTML, JSON, screenshots, and more'
+---
+
+Firecrawl supports multiple output formats to suit different use cases. You can request one or multiple formats in a single scrape operation.
+
+## Available Formats
+
+Specify the formats you want using the `formats` parameter:
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+doc = app.scrape(
+    url="https://firecrawl.dev",
+    formats=["markdown", "html", "screenshot"]
+)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc = await app.scrape({
+  url: 'https://firecrawl.dev',
+  formats: ['markdown', 'html', 'screenshot']
+});
+```
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v2/scrape' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://firecrawl.dev",
+    "formats": ["markdown", "html", "screenshot"]
+  }'
+```
+</CodeGroup>
+
+## Markdown
+
+Clean, LLM-ready markdown format. This is the default format and is ideal for feeding content into AI models.
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+doc = app.scrape("https://firecrawl.dev", formats=["markdown"])
+print(doc.markdown)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc = await app.scrape({
+  url: 'https://firecrawl.dev',
+  formats: ['markdown']
+});
+
+console.log(doc.markdown);
+```
+</CodeGroup>
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "markdown": "# Firecrawl Docs\n\nTurn websites into LLM-ready data...",
+    "metadata": {
+      "title": "Quickstart | Firecrawl",
+      "description": "Firecrawl allows you to turn entire websites into LLM-ready markdown",
+      "sourceURL": "https://docs.firecrawl.dev",
+      "statusCode": 200
+    }
+  }
+}
+```
+
+<Tip>
+Markdown format automatically removes headers, footers, navigation, and other non-main content when `onlyMainContent` is `true` (default).
+</Tip>
+
+## HTML
+
+Cleaned HTML version of the page content.
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+doc = app.scrape("https://firecrawl.dev", formats=["html"])
+print(doc.html)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc = await app.scrape({
+  url: 'https://firecrawl.dev',
+  formats: ['html']
+});
+
+console.log(doc.html);
+```
+</CodeGroup>
+
+## Raw HTML
+
+The complete, unmodified HTML of the page including all scripts, styles, and metadata.
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+doc = app.scrape("https://firecrawl.dev", formats=["rawHtml"])
+print(doc.raw_html)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc = await app.scrape({
+  url: 'https://firecrawl.dev',
+  formats: ['rawHtml']
+});
+
+console.log(doc.rawHtml);
+```
+</CodeGroup>
+
+<Warning>
+Raw HTML includes everything on the page and can be very large. Use this only when you need the complete page source.
+</Warning>
+
+## Links
+
+Extract all links found on the page.
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+doc = app.scrape("https://firecrawl.dev", formats=["links"])
+for link in doc.links:
+    print(link)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc = await app.scrape({
+  url: 'https://firecrawl.dev',
+  formats: ['links']
+});
+
+doc.links.forEach(link => console.log(link));
+```
+</CodeGroup>
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "links": [
+      "https://firecrawl.dev/pricing",
+      "https://firecrawl.dev/blog",
+      "https://docs.firecrawl.dev"
+    ]
+  }
+}
+```
+
+## Screenshot
+
+Capture a screenshot of the page. Screenshots are returned as base64-encoded images.
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+import base64
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# Viewport screenshot
+doc = app.scrape("https://firecrawl.dev", formats=["screenshot"])
+print(doc.screenshot)  # Base64 encoded image
+
+# Full page screenshot
+doc = app.scrape("https://firecrawl.dev", formats=["screenshot@fullPage"])
+print(doc.screenshot)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// Viewport screenshot
+const doc = await app.scrape({
+  url: 'https://firecrawl.dev',
+  formats: ['screenshot']
+});
+console.log(doc.screenshot);  // Base64 encoded image
+
+// Full page screenshot
+const doc2 = await app.scrape({
+  url: 'https://firecrawl.dev',
+  formats: ['screenshot@fullPage']
+});
+console.log(doc2.screenshot);
+```
+</CodeGroup>
+
+<Tip>
+Use `screenshot` for viewport-sized screenshots or `screenshot@fullPage` to capture the entire page including content below the fold.
+</Tip>
+
+## JSON (Structured Extraction)
+
+Extract structured data from pages using AI with a schema or prompt.
+
+### With Schema
+
+Define a precise structure for the data you want to extract:
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+from pydantic import BaseModel
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+class CompanyInfo(BaseModel):
+    company_mission: str
+    is_open_source: bool
+    is_in_yc: bool
+
+result = app.scrape(
+    'https://firecrawl.dev',
+    formats=[{"type": "json", "schema": CompanyInfo.model_json_schema()}]
+)
+
+print(result.json)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const schema = {
+  type: 'object',
+  properties: {
+    company_mission: { type: 'string' },
+    is_open_source: { type: 'boolean' },
+    is_in_yc: { type: 'boolean' }
+  },
+  required: ['company_mission', 'is_open_source', 'is_in_yc']
+};
+
+const result = await app.scrape({
+  url: 'https://firecrawl.dev',
+  formats: ['markdown'],
+  jsonOptions: { schema }
+});
+
+console.log(result.json);
+```
+</CodeGroup>
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "json": {
+      "company_mission": "Turn websites into LLM-ready data",
+      "is_open_source": true,
+      "is_in_yc": true
+    }
+  }
+}
+```
+
+### With Prompt (No Schema)
+
+Extract data using natural language without defining a strict schema:
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+result = app.scrape(
+    'https://firecrawl.dev',
+    formats=[{"type": "json", "prompt": "Extract the company mission"}]
+)
+
+print(result.json)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const result = await app.scrape({
+  url: 'https://firecrawl.dev',
+  formats: ['markdown'],
+  jsonOptions: {
+    prompt: 'Extract the company mission'
+  }
+});
+
+console.log(result.json);
+```
+</CodeGroup>
+
+## Branding
+
+Extract brand identity information including colors, fonts, and typography.
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+doc = app.scrape("https://firecrawl.dev", formats=["branding"])
+print(doc.branding)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc = await app.scrape({
+  url: 'https://firecrawl.dev',
+  formats: ['branding']
+});
+
+console.log(doc.branding);
+```
+</CodeGroup>
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "branding": {
+      "logo": "https://firecrawl.dev/logo.png",
+      "colors": {
+        "primary": "#FF6B35",
+        "secondary": "#004E89"
+      },
+      "fonts": [
+        {"family": "Inter"},
+        {"family": "Roboto"}
+      ],
+      "typography": {
+        "headingFont": "Inter",
+        "bodyFont": "Roboto"
+      }
+    }
+  }
+}
+```
+
+<Tip>
+Branding extraction derives information by executing on-page JavaScript to analyze computed styles and detect brand assets.
+</Tip>
+
+## Change Tracking
+
+Track changes to web pages over time using the `changeTracking` format.
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+doc = app.scrape(
+    url="https://example.com",
+    formats=["markdown", "changeTracking"],
+    change_tracking_options={
+        "modes": ["git-diff"]
+    }
+)
+
+if doc.change_tracking:
+    print(f"Status: {doc.change_tracking['changeStatus']}")
+    if doc.change_tracking.get('diff'):
+        print(doc.change_tracking['diff'])
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc = await app.scrape({
+  url: 'https://example.com',
+  formats: ['markdown', 'changeTracking'],
+  changeTrackingOptions: {
+    modes: ['git-diff']
+  }
+});
+
+if (doc.changeTracking) {
+  console.log(`Status: ${doc.changeTracking.changeStatus}`);
+  if (doc.changeTracking.diff) {
+    console.log(doc.changeTracking.diff);
+  }
+}
+```
+</CodeGroup>
+
+<Warning>
+Change tracking requires the `markdown` format to also be specified. The first scrape establishes a baseline for future comparisons.
+</Warning>
+
+## Combining Multiple Formats
+
+You can request multiple formats in a single scrape to get different views of the same content:
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+doc = app.scrape(
+    url="https://firecrawl.dev",
+    formats=["markdown", "html", "screenshot", "links", "branding"]
+)
+
+print(f"Title: {doc.metadata['title']}")
+print(f"Links found: {len(doc.links)}")
+print(f"Primary color: {doc.branding['colors']['primary']}")
+print(f"Content length: {len(doc.markdown)} chars")
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc = await app.scrape({
+  url: 'https://firecrawl.dev',
+  formats: ['markdown', 'html', 'screenshot', 'links', 'branding']
+});
+
+console.log(`Title: ${doc.metadata.title}`);
+console.log(`Links found: ${doc.links.length}`);
+console.log(`Primary color: ${doc.branding.colors.primary}`);
+console.log(`Content length: ${doc.markdown.length} chars`);
+```
+</CodeGroup>
+
+## Best Practices
+
+<Tip>
+**Request only what you need**: Each format adds to processing time and response size. Only request formats you'll actually use.
+</Tip>
+
+<Tip>
+**Use JSON extraction for structured data**: Instead of parsing markdown or HTML yourself, use JSON format with a schema to extract exactly what you need.
+</Tip>
+
+<Tip>
+**Combine formats strategically**: Request `markdown` + `links` for content analysis and navigation discovery, or `screenshot` + `branding` for visual analysis.
+</Tip>

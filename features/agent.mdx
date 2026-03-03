@@ -1,0 +1,327 @@
+---
+title: Agent
+description: Autonomous data gathering - just describe what you need
+---
+
+The Agent feature is the easiest way to get data from the web. Simply describe what you need in natural language, and the AI agent will search, navigate, and extract the information for you. No URLs required.
+
+## When to Use Agent
+
+Use Agent when you need to:
+- Gather information without knowing specific URLs
+- Research topics autonomously
+- Extract data from multiple sources
+- Get structured data based on a description
+- Automate competitive research
+- Find and extract information that requires navigation
+
+<Note>
+Agent is the evolution of the `/extract` endpoint: faster, more reliable, and doesn't require you to know the URLs upfront.
+</Note>
+
+## Basic Usage
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from firecrawl import Firecrawl
+
+    app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+    # Use the Agent for autonomous data gathering
+    result = app.agent(prompt="Find the pricing plans for Notion")
+    print(result.data)
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    import Firecrawl from '@mendable/firecrawl-js';
+
+    const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+    // Use the Agent for autonomous data gathering
+    const result = await app.agent({ prompt: 'Find the pricing plans for Notion' });
+    console.log(result.data);
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST 'https://api.firecrawl.dev/v2/agent' \
+      -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "prompt": "Find the pricing plans for Notion"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "result": "Notion offers the following pricing plans:\n\n1. Free - $0/month...\n2. Plus - $10/seat/month...\n3. Business - $18/seat/month...",
+    "sources": ["https://www.notion.so/pricing"]
+  }
+}
+```
+
+## Agent with Structured Output
+
+Define a schema to get structured, consistent data:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from firecrawl import Firecrawl
+    from pydantic import BaseModel, Field
+    from typing import List, Optional
+
+    app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+    class Founder(BaseModel):
+        name: str = Field(description="Full name of the founder")
+        role: Optional[str] = Field(None, description="Role or position")
+
+    class FoundersSchema(BaseModel):
+        founders: List[Founder] = Field(description="List of founders")
+
+    result = app.agent(
+        prompt="Find the founders of Firecrawl",
+        schema=FoundersSchema
+    )
+
+    print(result.data)
+    ```
+
+    **Output:**
+    ```json
+    {
+      "founders": [
+        {"name": "Eric Ciarla", "role": "Co-founder"},
+        {"name": "Nicolas Camara", "role": "Co-founder"},
+        {"name": "Caleb Peffer", "role": "Co-founder"}
+      ]
+    }
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    import Firecrawl from '@mendable/firecrawl-js';
+    import { z } from 'zod';
+
+    const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+    const founderSchema = z.object({
+      name: z.string().describe('Full name of the founder'),
+      role: z.string().optional().describe('Role or position'),
+    });
+
+    const foundersSchema = z.object({
+      founders: z.array(founderSchema).describe('List of founders'),
+    });
+
+    const result = await app.agent({
+      prompt: 'Find the founders of Firecrawl',
+      schema: foundersSchema,
+    });
+
+    console.log(result.data);
+    ```
+  </Tab>
+</Tabs>
+
+## Agent with URLs (Optional)
+
+Focus the agent on specific pages to improve accuracy and speed:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    result = app.agent(
+        urls=["https://docs.firecrawl.dev", "https://firecrawl.dev/pricing"],
+        prompt="Compare the features and pricing information"
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const result = await app.agent({
+      urls: ['https://docs.firecrawl.dev', 'https://firecrawl.dev/pricing'],
+      prompt: 'Compare the features and pricing information',
+    });
+    ```
+  </Tab>
+</Tabs>
+
+<Tip>
+Providing URLs helps the agent focus on specific sources, reducing search time and improving accuracy.
+</Tip>
+
+## Model Selection
+
+Choose between two models based on your needs:
+
+| Model | Cost | Best For |
+|-------|------|----------|
+| `spark-1-mini` (default) | 60% cheaper | Most tasks |
+| `spark-1-pro` | Standard | Complex research, critical extraction |
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    result = app.agent(
+        prompt="Compare enterprise features across Firecrawl, Apify, and ScrapingBee",
+        model="spark-1-pro"
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const result = await app.agent({
+      prompt: 'Compare enterprise features across Firecrawl, Apify, and ScrapingBee',
+      model: 'spark-1-pro',
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### When to Use Pro
+
+<Steps>
+  <Step title="Comparing data across multiple websites">
+    Pro model excels at finding and synthesizing information from multiple sources.
+  </Step>
+  <Step title="Complex navigation or authentication">
+    Use Pro for sites that require multi-step navigation or complex interactions.
+  </Step>
+  <Step title="Research tasks with multiple paths">
+    Pro model can explore different approaches to find the best information.
+  </Step>
+  <Step title="Critical data extraction">
+    When accuracy is paramount, Pro provides more reliable results.
+  </Step>
+</Steps>
+
+## Use Cases
+
+### Competitive Research
+
+```python
+from pydantic import BaseModel, Field
+from typing import List
+
+class PricingPlan(BaseModel):
+    name: str
+    price: str
+    features: List[str]
+
+class CompetitorPricing(BaseModel):
+    company: str
+    plans: List[PricingPlan]
+
+result = app.agent(
+    prompt="Find the pricing plans for Stripe",
+    schema=CompetitorPricing,
+    model="spark-1-pro"
+)
+
+print(result.data)
+```
+
+### Team Information Gathering
+
+```python
+from typing import List, Optional
+
+class TeamMember(BaseModel):
+    name: str
+    role: str
+    linkedin: Optional[str] = None
+
+class CompanyTeam(BaseModel):
+    company: str = Field(description="Company name")
+    team: List[TeamMember] = Field(description="Leadership team members")
+
+result = app.agent(
+    prompt="Find the leadership team of OpenAI",
+    schema=CompanyTeam
+)
+```
+
+### Product Features Comparison
+
+```python
+result = app.agent(
+    prompt="Compare the key features of Notion, Coda, and Airtable",
+    model="spark-1-pro"
+)
+
+print(result.data.result)
+print(f"Sources: {result.data.sources}")
+```
+
+### Industry Research
+
+```python
+from typing import List
+
+class MarketInsight(BaseModel):
+    trend: str = Field(description="Market trend")
+    description: str = Field(description="Detailed description")
+    impact: str = Field(description="Potential impact")
+
+class MarketAnalysis(BaseModel):
+    industry: str
+    insights: List[MarketInsight]
+
+result = app.agent(
+    prompt="What are the top 3 trends in AI infrastructure for 2024?",
+    schema=MarketAnalysis,
+    model="spark-1-pro"
+)
+```
+
+## Using Firecrawl with AI Agents
+
+Install the Firecrawl skill to let AI coding agents like Claude Code, Codex, and OpenCode use Firecrawl automatically:
+
+```bash
+npx skills add firecrawl/cli
+```
+
+Restart your agent after installing. The agent will automatically have access to Firecrawl's capabilities.
+
+<Note>
+See the [Skill + CLI documentation](https://docs.firecrawl.dev/sdks/cli) for full setup instructions.
+</Note>
+
+## Best Practices
+
+<Tip>
+- Write clear, specific prompts for better results
+- Use structured schemas for consistent, parseable output
+- Provide URLs when you know relevant sources to improve speed and accuracy
+- Start with `spark-1-mini` and upgrade to `spark-1-pro` only when needed
+- Use Pro for complex multi-site comparisons and critical extractions
+- Request only the data you need to minimize costs
+- Include field descriptions in your schema for more accurate extraction
+</Tip>
+
+## Agent vs Other Features
+
+| Feature | Best For | Requires URLs |
+|---------|----------|---------------|
+| **Agent** | Autonomous research, unknown URLs | No |
+| [Scrape](/features/scrape) | Single known URL | Yes |
+| [Crawl](/features/crawl) | Entire website | Yes |
+| [Search](/features/search) | Finding pages by query | No |
+| [Batch Scrape](/features/batch-scrape) | Multiple known URLs | Yes |
+
+## Next Steps
+
+- Learn about [Search](/features/search) to find and scrape search results
+- Use [Scrape](/features/scrape) for extracting from known URLs
+- Try [Crawl](/features/crawl) for comprehensive site extraction

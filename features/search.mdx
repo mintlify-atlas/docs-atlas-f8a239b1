@@ -1,0 +1,344 @@
+---
+title: Search
+description: Search the web and get full page content from results
+---
+
+The Search feature allows you to search the web and optionally scrape the full content of search results. It combines the power of web search with Firecrawl's scraping capabilities to give you LLM-ready data from search results.
+
+## When to Use Search
+
+Use Search when you need to:
+- Find and scrape content based on search queries
+- Research topics across multiple websites
+- Gather competitive intelligence
+- Build datasets from search results
+- Find the latest information on a topic
+
+## Basic Usage
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from firecrawl import Firecrawl
+
+    app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+    # Search the web
+    results = app.search(
+        "firecrawl web scraping",
+        limit=5
+    )
+
+    for result in results.data.web:
+        print(f"{result.title}: {result.url}")
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    import Firecrawl from '@mendable/firecrawl-js';
+
+    const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+    // Search the web
+    const results = await app.search('firecrawl web scraping', {
+      limit: 5,
+    });
+
+    results.data.web.forEach(result => {
+      console.log(`${result.title}: ${result.url}`);
+    });
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST 'https://api.firecrawl.dev/v2/search' \
+      -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "query": "firecrawl web scraping",
+        "limit": 5
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "web": [
+      {
+        "url": "https://www.firecrawl.dev/",
+        "title": "Firecrawl - The Web Data API for AI",
+        "description": "The web crawling, scraping, and search API for AI.",
+        "position": 1
+      }
+    ],
+    "images": [...],
+    "news": [...]
+  }
+}
+```
+
+## Search with Content Scraping
+
+Get the full content of search results by adding `scrape_options`:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    results = app.search(
+        "firecrawl web scraping",
+        limit=3,
+        scrape_options={
+            "formats": ["markdown", "links"]
+        }
+    )
+
+    for result in results.data.web:
+        print(f"Title: {result.title}")
+        print(f"URL: {result.url}")
+        print(f"Content: {result.markdown[:200]}...")
+        print("---")
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const results = await app.search('firecrawl web scraping', {
+      limit: 3,
+      scrapeOptions: {
+        formats: ['markdown', 'links'],
+      },
+    });
+
+    results.data.web.forEach(result => {
+      console.log(`Title: ${result.title}`);
+      console.log(`URL: ${result.url}`);
+      console.log(`Content: ${result.markdown.substring(0, 200)}...`);
+      console.log('---');
+    });
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST 'https://api.firecrawl.dev/v2/search' \
+      -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "query": "firecrawl web scraping",
+        "limit": 3,
+        "scrapeOptions": {
+          "formats": ["markdown", "links"]
+        }
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+When `scrapeOptions` is provided, each search result will be scraped with the specified options. This counts as one search credit plus one scrape credit per result.
+</Note>
+
+## Search Options
+
+### Limit Results
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    results = app.search(
+        "best web scraping tools 2024",
+        limit=10  # Get up to 10 results
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const results = await app.search('best web scraping tools 2024', {
+      limit: 10,  // Get up to 10 results
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Extract Structured Data from Results
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from pydantic import BaseModel
+    from typing import List
+
+    class ProductInfo(BaseModel):
+        name: str
+        price: str
+        features: List[str]
+
+    results = app.search(
+        "best AI tools 2024",
+        limit=5,
+        scrape_options={
+            "formats": [{
+                "type": "json",
+                "schema": ProductInfo.model_json_schema()
+            }]
+        }
+    )
+
+    for result in results.data.web:
+        print(result.json)
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    import { z } from 'zod';
+
+    const schema = z.object({
+      name: z.string(),
+      price: z.string(),
+      features: z.array(z.string()),
+    });
+
+    const results = await app.search('best AI tools 2024', {
+      limit: 5,
+      scrapeOptions: {
+        formats: [{
+          type: 'json',
+          schema,
+        }],
+      },
+    });
+
+    results.data.web.forEach(result => {
+      console.log(result.json);
+    });
+    ```
+  </Tab>
+</Tabs>
+
+## Use Cases
+
+### Research a Topic
+
+```python
+# Search and scrape articles about a topic
+results = app.search(
+    "LLM prompt engineering best practices",
+    limit=10,
+    scrape_options={"formats": ["markdown"]}
+)
+
+# Save to files for analysis
+for i, result in enumerate(results.data.web):
+    filename = f"article_{i+1}.md"
+    with open(filename, 'w') as f:
+        f.write(f"# {result.title}\n\n")
+        f.write(f"Source: {result.url}\n\n")
+        f.write(result.markdown)
+```
+
+### Competitive Intelligence
+
+```python
+# Find competitor pricing pages
+results = app.search(
+    "web scraping API pricing",
+    limit=5,
+    scrape_options={
+        "formats": [{
+            "type": "json",
+            "prompt": "Extract pricing plans with names, prices, and features"
+        }]
+    }
+)
+
+for result in results.data.web:
+    print(f"\n{result.title}")
+    print(f"Pricing: {result.json}")
+```
+
+### News Monitoring
+
+```python
+# Search for recent news
+results = app.search(
+    "AI regulation news 2024",
+    limit=10
+)
+
+# Access news results
+for article in results.data.news:
+    print(f"{article.title} - {article.url}")
+```
+
+### Image Search
+
+```python
+# Search for images
+results = app.search(
+    "machine learning diagrams",
+    limit=20
+)
+
+# Access image results
+for image in results.data.images:
+    print(f"{image.url}")
+```
+
+## Response Structure
+
+The search response includes three categories:
+
+```json
+{
+  "success": true,
+  "data": {
+    "web": [
+      {
+        "url": "https://example.com",
+        "title": "Example Page",
+        "description": "Page description",
+        "position": 1,
+        "markdown": "# Content..." // If scrapeOptions provided
+      }
+    ],
+    "images": [
+      {
+        "url": "https://example.com/image.jpg",
+        "title": "Image title"
+      }
+    ],
+    "news": [
+      {
+        "url": "https://news.example.com/article",
+        "title": "News Article Title",
+        "description": "Article description",
+        "publishedDate": "2024-01-15"
+      }
+    ]
+  }
+}
+```
+
+## Best Practices
+
+<Tip>
+- Use specific search queries for better results
+- Start with a small `limit` to test before scaling up
+- Only add `scrapeOptions` when you need the full content
+- Use structured extraction for consistent data across results
+- Consider API costs - search + scraping counts as separate credits
+- For recurring searches, consider caching results
+</Tip>
+
+<Note>
+Search results are powered by web search engines and are subject to their availability and ranking algorithms. Results may vary over time.
+</Note>
+
+## Next Steps
+
+- Use [Agent](/features/agent) for autonomous research without needing URLs
+- Try [Scrape](/features/scrape) for individual pages from search results
+- Combine with [Batch Scrape](/features/batch-scrape) for processing many URLs

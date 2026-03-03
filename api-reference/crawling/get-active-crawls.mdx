@@ -1,0 +1,180 @@
+---
+title: 'Get Active Crawls'
+description: 'Get all active crawl jobs for your team'
+---
+
+## GET /v1/crawl/active
+
+Retrieve a list of all currently active crawl jobs for the authenticated team.
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token. Include your API key in the `Authorization` header:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates if the request was successful
+</ResponseField>
+
+<ResponseField name="crawls" type="array">
+  Array of active crawl jobs. Each crawl object contains:
+  
+  <Expandable title="crawl properties">
+    <ResponseField name="id" type="string">
+      The unique identifier of the crawl (UUID format)
+    </ResponseField>
+    
+    <ResponseField name="teamId" type="string">
+      The ID of the team that owns the crawl
+    </ResponseField>
+    
+    <ResponseField name="url" type="string">
+      The origin URL of the crawl
+    </ResponseField>
+    
+    <ResponseField name="options" type="object">
+      The crawler options used for this crawl
+      
+      <Expandable title="options properties">
+        <ResponseField name="scrapeOptions" type="object">
+          Scraping options applied to each page in the crawl
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://api.firecrawl.dev/v1/crawl/active \
+  -H 'Authorization: Bearer YOUR_API_KEY'
+```
+
+```python Python
+from firecrawl import FirecrawlApp
+import requests
+
+app = FirecrawlApp(api_key="YOUR_API_KEY")
+
+# Get all active crawls
+response = requests.get(
+    "https://api.firecrawl.dev/v1/crawl/active",
+    headers={"Authorization": f"Bearer {app.api_key}"}
+)
+active_crawls = response.json()
+
+print(f"Active crawls: {len(active_crawls['crawls'])}")
+for crawl in active_crawls['crawls']:
+    print(f"ID: {crawl['id']}")
+    print(f"URL: {crawl['url']}")
+    print(f"Team ID: {crawl['teamId']}")
+    print()
+```
+
+```javascript JavaScript
+import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({ apiKey: 'YOUR_API_KEY' });
+
+// Get all active crawls
+const response = await fetch('https://api.firecrawl.dev/v1/crawl/active', {
+  headers: {
+    'Authorization': `Bearer ${app.apiKey}`
+  }
+});
+const activeCrawls = await response.json();
+
+console.log(`Active crawls: ${activeCrawls.crawls.length}`);
+activeCrawls.crawls.forEach(crawl => {
+  console.log(`ID: ${crawl.id}`);
+  console.log(`URL: ${crawl.url}`);
+  console.log(`Team ID: ${crawl.teamId}`);
+  console.log();
+});
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json
+{
+  "success": true,
+  "crawls": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "teamId": "team_abc123",
+      "url": "https://example.com",
+      "options": {
+        "scrapeOptions": {
+          "formats": ["markdown", "html"],
+          "onlyMainContent": true
+        }
+      }
+    },
+    {
+      "id": "234e5678-f90c-23e4-b567-537725285111",
+      "teamId": "team_abc123",
+      "url": "https://docs.example.com",
+      "options": {
+        "scrapeOptions": {
+          "formats": ["markdown"],
+          "onlyMainContent": true
+        }
+      }
+    }
+  ]
+}
+```
+
+## Error Responses
+
+<ResponseField name="402 Payment Required">
+  ```json
+  {
+    "success": false,
+    "error": "Payment required to access this resource."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="429 Too Many Requests">
+  ```json
+  {
+    "success": false,
+    "error": "Request rate limit exceeded. Please wait and try again later."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500 Server Error">
+  ```json
+  {
+    "success": false,
+    "error": "An unexpected error occurred on the server."
+  }
+  ```
+</ResponseField>
+
+## Use Cases
+
+- Monitor all ongoing crawl operations for your team
+- Track resource usage across multiple crawls
+- Identify long-running crawls that may need attention
+- Manage concurrent crawl jobs
+- Audit crawl activity across your organization
+
+## Notes
+
+- Only returns crawls that are currently in progress (status: `scraping`)
+- Completed, failed, or cancelled crawls are not included
+- All team members with valid API keys can see the same active crawls
+- Use the crawl `id` to get detailed status with [Get Crawl Status](/api-reference/crawling/get-crawl-status)

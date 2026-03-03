@@ -1,0 +1,218 @@
+---
+title: 'Start Crawl'
+description: 'Crawl multiple URLs based on options'
+---
+
+## POST /v1/crawl
+
+Start a crawl job to recursively scrape URLs starting from a base URL.
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token. Include your API key in the `Authorization` header:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Request Body
+
+<ParamField body="url" type="string" required>
+  The base URL to start crawling from
+</ParamField>
+
+<ParamField body="excludePaths" type="array">
+  URL pathname regex patterns that exclude matching URLs from the crawl. For example, if you set `"excludePaths": ["blog/.*"]` for the base URL firecrawl.dev, any results matching that pattern will be excluded, such as https://www.firecrawl.dev/blog/firecrawl-launch-week-1-recap.
+</ParamField>
+
+<ParamField body="includePaths" type="array">
+  URL pathname regex patterns that include matching URLs in the crawl. Only the paths that match the specified patterns will be included in the response. For example, if you set `"includePaths": ["blog/.*"]` for the base URL firecrawl.dev, only results matching that pattern will be included, such as https://www.firecrawl.dev/blog/firecrawl-launch-week-1-recap.
+</ParamField>
+
+<ParamField body="maxDepth" type="integer" default="10">
+  Maximum depth to crawl relative to the base URL. Basically, the max number of slashes the pathname of a scraped URL may contain.
+</ParamField>
+
+<ParamField body="maxDiscoveryDepth" type="integer">
+  Maximum depth to crawl based on discovery order. The root site and sitemapped pages has a discovery depth of 0. For example, if you set it to 1, and you set ignoreSitemap, you will only crawl the entered URL and all URLs that are linked on that page.
+</ParamField>
+
+<ParamField body="ignoreSitemap" type="boolean" default="false">
+  Ignore the website sitemap when crawling
+</ParamField>
+
+<ParamField body="ignoreQueryParameters" type="boolean" default="false">
+  Do not re-scrape the same path with different (or none) query parameters
+</ParamField>
+
+<ParamField body="limit" type="integer" default="10000">
+  Maximum number of pages to crawl. Default limit is 10000.
+</ParamField>
+
+<ParamField body="allowBackwardLinks" type="boolean" default="false">
+  Allows the crawler to follow internal links to sibling or parent URLs, not just child paths.
+
+  **false**: Only crawls deeper (child) URLs.
+  → e.g. /features/feature-1 → /features/feature-1/tips ✅
+  → Won't follow /pricing or / ❌
+
+  **true**: Crawls any internal links, including siblings and parents.
+  → e.g. /features/feature-1 → /pricing, /, etc. ✅
+
+  Use true for broader internal coverage beyond nested paths.
+</ParamField>
+
+<ParamField body="allowExternalLinks" type="boolean" default="false">
+  Allows the crawler to follow links to external websites.
+</ParamField>
+
+<ParamField body="delay" type="number">
+  Delay in seconds between scrapes. This helps respect website rate limits.
+</ParamField>
+
+<ParamField body="webhook" type="object">
+  A webhook specification object.
+  
+  <Expandable title="webhook properties">
+    <ParamField body="webhook.url" type="string" required>
+      The URL to send the webhook to. This will trigger for crawl started (crawl.started), every page crawled (crawl.page) and when the crawl is completed (crawl.completed or crawl.failed). The response will be the same as the `/scrape` endpoint.
+    </ParamField>
+    
+    <ParamField body="webhook.headers" type="object">
+      Headers to send to the webhook URL.
+    </ParamField>
+    
+    <ParamField body="webhook.metadata" type="object">
+      Custom metadata that will be included in all webhook payloads for this crawl
+    </ParamField>
+    
+    <ParamField body="webhook.events" type="array">
+      Type of events that should be sent to the webhook URL. (default: all)
+      
+      Options: `completed`, `page`, `failed`, `started`
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="scrapeOptions" type="object">
+  Options for scraping each page. See [Scrape Options](/api-reference/scraping/scrape#request-body) for full details.
+  
+  Common options include:
+  - `formats`: Output formats (e.g., `["markdown", "html", "links"]`)
+  - `onlyMainContent`: Extract only main content (default: `true`)
+  - `includeTags`: HTML tags to include
+  - `excludeTags`: HTML tags to exclude
+  - `waitFor`: Milliseconds to wait before scraping
+  - `mobile`: Emulate mobile device
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates if the crawl job was successfully started
+</ResponseField>
+
+<ResponseField name="id" type="string">
+  The unique identifier for the crawl job. Use this ID to check the status and retrieve results.
+</ResponseField>
+
+<ResponseField name="url" type="string">
+  The base URL that is being crawled
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api.firecrawl.dev/v1/crawl \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -d '{
+    "url": "https://example.com",
+    "limit": 100,
+    "scrapeOptions": {
+      "formats": ["markdown", "html"]
+    }
+  }'
+```
+
+```python Python
+from firecrawl import FirecrawlApp
+
+app = FirecrawlApp(api_key="YOUR_API_KEY")
+
+# Start a crawl job
+result = app.crawl_url(
+    url="https://example.com",
+    params={
+        "limit": 100,
+        "scrapeOptions": {
+            "formats": ["markdown", "html"]
+        }
+    }
+)
+
+print(f"Crawl ID: {result['id']}")
+```
+
+```javascript JavaScript
+import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({ apiKey: 'YOUR_API_KEY' });
+
+// Start a crawl job
+const result = await app.crawlUrl('https://example.com', {
+  limit: 100,
+  scrapeOptions: {
+    formats: ['markdown', 'html']
+  }
+});
+
+console.log(`Crawl ID: ${result.id}`);
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json
+{
+  "success": true,
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "url": "https://example.com"
+}
+```
+
+## Error Responses
+
+<ResponseField name="402 Payment Required">
+  ```json
+  {
+    "error": "Payment required to access this resource."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="429 Too Many Requests">
+  ```json
+  {
+    "error": "Request rate limit exceeded. Please wait and try again later."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500 Server Error">
+  ```json
+  {
+    "error": "An unexpected error occurred on the server."
+  }
+  ```
+</ResponseField>
+
+## Next Steps
+
+After starting a crawl job, use the returned `id` to:
+- [Check crawl status](/api-reference/crawling/get-crawl-status) and retrieve results
+- [Get crawl errors](/api-reference/crawling/get-crawl-errors) if any occurred
+- [Cancel the crawl](/api-reference/crawling/cancel-crawl) if needed

@@ -1,0 +1,423 @@
+---
+title: MCP Server
+description: Firecrawl Model Context Protocol (MCP) server for AI assistants like Claude Desktop
+---
+
+The Firecrawl MCP server enables AI assistants like Claude Desktop to scrape, crawl, and extract web data using the Model Context Protocol (MCP). It provides seamless integration with any MCP-compatible client.
+
+## What is MCP?
+
+The [Model Context Protocol (MCP)](https://modelcontextprotocol.io) is an open protocol that standardizes how AI applications connect to data sources. The Firecrawl MCP server implements this protocol, allowing AI assistants to access web scraping capabilities.
+
+## Installation
+
+### For Claude Desktop
+
+Add the Firecrawl MCP server to your Claude Desktop configuration:
+
+1. **Install the MCP server:**
+
+```bash
+npm install -g @mendable/firecrawl-mcp-server
+```
+
+2. **Configure Claude Desktop:**
+
+Edit your Claude Desktop config file:
+
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+Add the Firecrawl server:
+
+```json
+{
+  "mcpServers": {
+    "firecrawl": {
+      "command": "npx",
+      "args": ["-y", "@mendable/firecrawl-mcp-server"],
+      "env": {
+        "FIRECRAWL_API_KEY": "fc-YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+3. **Restart Claude Desktop**
+
+The Firecrawl tools will now be available in Claude Desktop.
+
+### For Other MCP Clients
+
+The server works with any MCP-compatible client. Install and configure according to your client's documentation:
+
+```bash
+npm install -g @mendable/firecrawl-mcp-server
+```
+
+Then add it to your client's MCP configuration.
+
+## Authentication
+
+Get your API key from [firecrawl.dev](https://firecrawl.dev) and set it in your MCP configuration:
+
+```json
+{
+  "env": {
+    "FIRECRAWL_API_KEY": "fc-YOUR_API_KEY"
+  }
+}
+```
+
+## Available Tools
+
+The MCP server provides the following tools:
+
+### 1. Scrape
+
+Scrape a single URL and get clean, LLM-ready content.
+
+**Parameters:**
+- `url` (required) - The URL to scrape
+- `formats` - Output formats: `markdown`, `html`, `screenshot`, `links`
+- `onlyMainContent` - Extract only main content (default: `true`)
+- `includeTags` - HTML tags to include
+- `excludeTags` - HTML tags to exclude
+
+**Example Usage in Claude:**
+```
+Scrape the documentation from https://docs.firecrawl.dev
+```
+
+### 2. Crawl
+
+Crawl an entire website and get content from all pages.
+
+**Parameters:**
+- `url` (required) - Starting URL
+- `limit` - Maximum pages to crawl (default: 100)
+- `maxDepth` - Maximum discovery depth
+- `excludePaths` - Paths to exclude (e.g., `["blog/*", "admin/*"]`)
+- `includePaths` - Paths to include
+- `formats` - Output formats for scraped pages
+
+**Example Usage in Claude:**
+```
+Crawl the Firecrawl blog and extract all article titles
+```
+
+### 3. Map
+
+Discover all URLs on a website.
+
+**Parameters:**
+- `url` (required) - Website URL
+- `search` - Search query to filter URLs
+- `limit` - Maximum URLs to return
+- `includeSubdomains` - Include subdomains
+
+**Example Usage in Claude:**
+```
+Map all URLs on https://firecrawl.dev related to pricing
+```
+
+### 4. Search
+
+Search the web and optionally scrape results.
+
+**Parameters:**
+- `query` (required) - Search query
+- `limit` - Number of results (default: 10)
+- `scrapeResults` - Also scrape the search results
+- `formats` - Output formats for scraped content
+
+**Example Usage in Claude:**
+```
+Search for "best web scraping tools 2024" and scrape the top 5 results
+```
+
+### 5. Agent
+
+Autonomous AI agent for web research and data extraction.
+
+**Parameters:**
+- `prompt` (required) - What you want the agent to find
+- `urls` - Optional URLs to focus on
+- `model` - Model to use: `spark-1-mini` (default), `spark-1-pro`
+- `schema` - JSON schema for structured output
+
+**Example Usage in Claude:**
+```
+Find the pricing plans for Notion and compare them to Airtable
+```
+
+### 6. Batch Scrape
+
+Scrape multiple URLs in parallel.
+
+**Parameters:**
+- `urls` (required) - Array of URLs to scrape
+- `formats` - Output formats
+
+**Example Usage in Claude:**
+```
+Scrape these URLs and extract the main content:
+- https://firecrawl.dev
+- https://docs.firecrawl.dev
+- https://firecrawl.dev/pricing
+```
+
+## Usage Examples
+
+### With Claude Desktop
+
+Once configured, you can ask Claude naturally:
+
+**Scraping:**
+```
+Scrape the Firecrawl documentation and summarize the main features
+```
+
+**Crawling:**
+```
+Crawl the Firecrawl blog and create a list of all articles with their titles and URLs
+```
+
+**Agent Research:**
+```
+Find information about the founders of Firecrawl, including their names and roles
+```
+
+**Search:**
+```
+Search for recent articles about web scraping best practices and summarize the key points
+```
+
+**Batch Processing:**
+```
+Scrape these competitor websites and compare their pricing:
+- https://competitor1.com/pricing
+- https://competitor2.com/pricing
+- https://competitor3.com/pricing
+```
+
+### Programmatic Usage
+
+You can also run the MCP server programmatically:
+
+```javascript
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import FirecrawlMCPServer from '@mendable/firecrawl-mcp-server';
+
+const server = new FirecrawlMCPServer({
+  apiKey: process.env.FIRECRAWL_API_KEY
+});
+
+const transport = new StdioServerTransport();
+await server.connect(transport);
+```
+
+## Configuration
+
+### Environment Variables
+
+```json
+{
+  "env": {
+    "FIRECRAWL_API_KEY": "fc-YOUR_API_KEY",
+    "FIRECRAWL_API_URL": "https://api.firecrawl.dev"
+  }
+}
+```
+
+### Advanced Configuration
+
+For custom configurations, you can extend the server:
+
+```json
+{
+  "mcpServers": {
+    "firecrawl": {
+      "command": "node",
+      "args": ["/path/to/custom-server.js"],
+      "env": {
+        "FIRECRAWL_API_KEY": "fc-YOUR_API_KEY",
+        "FIRECRAWL_API_URL": "https://api.firecrawl.dev",
+        "MAX_CRAWL_LIMIT": "100",
+        "DEFAULT_FORMATS": "markdown,html"
+      }
+    }
+  }
+}
+```
+
+## Tool Response Format
+
+All tools return structured data that Claude can easily parse:
+
+### Scrape Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "markdown": "# Page Title\n\nContent...",
+    "html": "<html>...</html>",
+    "metadata": {
+      "title": "Page Title",
+      "description": "Page description",
+      "sourceURL": "https://example.com"
+    }
+  }
+}
+```
+
+### Crawl Response
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "markdown": "# Page 1\n\nContent...",
+      "metadata": {
+        "title": "Page 1",
+        "sourceURL": "https://example.com/page1"
+      }
+    },
+    {
+      "markdown": "# Page 2\n\nContent...",
+      "metadata": {
+        "title": "Page 2",
+        "sourceURL": "https://example.com/page2"
+      }
+    }
+  ],
+  "total": 2,
+  "creditsUsed": 2
+}
+```
+
+### Agent Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "result": "The founders of Firecrawl are...",
+    "sources": [
+      "https://firecrawl.dev/about",
+      "https://www.ycombinator.com/companies/firecrawl"
+    ]
+  }
+}
+```
+
+## Error Handling
+
+The MCP server provides clear error messages:
+
+```json
+{
+  "success": false,
+  "error": "Invalid API key",
+  "code": "AUTHENTICATION_ERROR"
+}
+```
+
+Common error codes:
+- `AUTHENTICATION_ERROR` - Invalid or missing API key
+- `RATE_LIMIT_ERROR` - Rate limit exceeded
+- `INVALID_URL` - Invalid URL format
+- `SCRAPE_FAILED` - Failed to scrape the URL
+- `CRAWL_TIMEOUT` - Crawl operation timed out
+
+## Debugging
+
+Enable debug logging:
+
+```json
+{
+  "mcpServers": {
+    "firecrawl": {
+      "command": "npx",
+      "args": ["-y", "@mendable/firecrawl-mcp-server"],
+      "env": {
+        "FIRECRAWL_API_KEY": "fc-YOUR_API_KEY",
+        "DEBUG": "true"
+      }
+    }
+  }
+}
+```
+
+Logs will be written to:
+- **macOS/Linux**: `~/.config/firecrawl-mcp/logs/`
+- **Windows**: `%APPDATA%\firecrawl-mcp\logs\`
+
+## Updating
+
+Update to the latest version:
+
+```bash
+npm update -g @mendable/firecrawl-mcp-server
+```
+
+Then restart your MCP client (e.g., Claude Desktop).
+
+## Uninstalling
+
+1. Remove the server configuration from your MCP client config
+2. Uninstall the package:
+
+```bash
+npm uninstall -g @mendable/firecrawl-mcp-server
+```
+
+## Supported Clients
+
+The Firecrawl MCP server works with:
+
+- **Claude Desktop** (Anthropic)
+- **Continue** (VS Code extension)
+- **Cody** (Sourcegraph)
+- Any MCP-compatible client
+
+## Security
+
+- API keys are stored in your local MCP configuration
+- All requests are made directly from your machine to the Firecrawl API
+- No data is sent to third parties except Firecrawl
+- Use environment variables or secure configuration files for API keys
+
+## Performance
+
+- Scraping is near-instant for most pages
+- Crawling time depends on the number of pages (typically 1-5 minutes for 50-100 pages)
+- Agent tasks vary based on complexity (30 seconds to 2 minutes)
+- Batch scraping processes URLs in parallel for optimal speed
+
+## Limitations
+
+- Maximum crawl limit: 1000 pages per request
+- Maximum batch scrape: 100 URLs per request
+- Rate limits apply based on your Firecrawl plan
+- Timeout limits: 5 minutes for crawls, 2 minutes for agent tasks
+
+## Resources
+
+- [MCP Server Repository](https://github.com/firecrawl/firecrawl-mcp-server)
+- [Model Context Protocol](https://modelcontextprotocol.io)
+- [Firecrawl Documentation](https://docs.firecrawl.dev)
+- [API Reference](/api-reference/introduction)
+- [GitHub Issues](https://github.com/firecrawl/firecrawl/issues)
+
+## Support
+
+For help:
+
+- [GitHub Issues](https://github.com/firecrawl/firecrawl/issues)
+- [Discord Community](https://discord.com/invite/gSmWdAkdwd)
+- [Documentation](https://docs.firecrawl.dev)

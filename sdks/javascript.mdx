@@ -1,0 +1,531 @@
+---
+title: JavaScript SDK
+description: Official Node.js/JavaScript SDK for Firecrawl - scrape, crawl, and extract web data for AI applications
+---
+
+The Firecrawl JavaScript SDK provides a typed interface for scraping, crawling, and extracting structured data from websites. It supports both ESM and CommonJS, and automatically handles polling for async operations.
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @mendable/firecrawl-js
+```
+
+```bash yarn
+yarn add @mendable/firecrawl-js
+```
+
+```bash pnpm
+pnpm add @mendable/firecrawl-js
+```
+</CodeGroup>
+
+## Quick Start
+
+```javascript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// Scrape a single page
+const doc = await app.scrape('https://firecrawl.dev', {
+  formats: ['markdown', 'html']
+});
+console.log(doc.markdown);
+```
+
+## Authentication
+
+Get your API key from [firecrawl.dev](https://firecrawl.dev) and set it as an environment variable or pass it directly:
+
+```javascript
+// Option 1: Environment variable
+process.env.FIRECRAWL_API_KEY = 'fc-YOUR_API_KEY';
+const app = new Firecrawl();
+
+// Option 2: Direct parameter
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+```
+
+## Scraping
+
+### Basic Scrape
+
+Scrape a single URL and get content in various formats:
+
+```javascript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// Get markdown and HTML
+const doc = await app.scrape('https://firecrawl.dev', {
+  formats: ['markdown', 'html']
+});
+
+console.log(doc.markdown);
+console.log(doc.html);
+```
+
+### Structured Data Extraction
+
+Extract structured data using Zod schemas:
+
+```javascript
+import Firecrawl from '@mendable/firecrawl-js';
+import { z } from 'zod';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const schema = z.object({
+  companyMission: z.string(),
+  isOpenSource: z.boolean(),
+  isInYC: z.boolean()
+});
+
+const doc = await app.scrape('https://firecrawl.dev', {
+  formats: [{ type: 'json', schema }]
+});
+
+console.log(doc.json);
+// { companyMission: "Turn websites into LLM-ready data", isOpenSource: true, isInYC: true }
+```
+
+### Extract with Prompt (No Schema)
+
+```javascript
+const doc = await app.scrape('https://firecrawl.dev', {
+  formats: [{
+    type: 'json',
+    prompt: 'Extract the company mission'
+  }]
+});
+```
+
+### Additional Formats
+
+```javascript
+// Get screenshot
+const doc = await app.scrape('https://firecrawl.dev', {
+  formats: ['screenshot']
+});
+console.log(doc.screenshot); // Base64 encoded image
+
+// Get branding information
+const doc = await app.scrape('https://firecrawl.dev', {
+  formats: ['branding']
+});
+console.log(doc.branding); // { colors: {...}, fonts: [...], typography: {...} }
+
+// Get all links
+const doc = await app.scrape('https://firecrawl.dev', {
+  formats: ['links']
+});
+console.log(doc.links);
+```
+
+### Actions (Interact Before Scraping)
+
+Perform actions before extracting content:
+
+```javascript
+const doc = await app.scrape('https://example.com/login', {
+  formats: ['markdown'],
+  actions: [
+    { type: 'write', text: 'user@example.com' },
+    { type: 'press', key: 'Tab' },
+    { type: 'write', text: 'password' },
+    { type: 'click', selector: 'button[type="submit"]' },
+    { type: 'wait', milliseconds: 2000 },
+    { type: 'screenshot' }
+  ]
+});
+```
+
+## Crawling
+
+### Basic Crawl (Auto-Wait)
+
+Crawl a website and automatically wait for completion:
+
+```javascript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const result = await app.crawl('https://firecrawl.dev', {
+  limit: 100,
+  scrapeOptions: {
+    formats: ['markdown', 'html']
+  },
+  pollInterval: 2
+});
+
+for (const doc of result.data) {
+  console.log(doc.metadata.sourceURL);
+  console.log(doc.markdown.substring(0, 100));
+}
+```
+
+### Async Crawl (Manual Polling)
+
+Start a crawl and poll manually:
+
+```javascript
+// Start the crawl
+const start = await app.startCrawl('https://firecrawl.dev', {
+  limit: 100,
+  scrapeOptions: { formats: ['markdown'] }
+});
+
+console.log(`Crawl started with ID: ${start.id}`);
+
+// Check status later
+const status = await app.getCrawlStatus(start.id);
+console.log(`Status: ${status.status}`);
+console.log(`Completed: ${status.completed}/${status.total}`);
+```
+
+### Cancel a Crawl
+
+```javascript
+const cancelled = await app.cancelCrawl(start.id);
+console.log(cancelled);
+```
+
+### Advanced Crawl Options
+
+```javascript
+const result = await app.crawl('https://firecrawl.dev', {
+  limit: 50,
+  maxDiscoveryDepth: 3,
+  excludePaths: ['blog/*', 'admin/*'],
+  includePaths: ['docs/*'],
+  allowBackwardLinks: true,
+  scrapeOptions: {
+    formats: ['markdown', 'html'],
+    onlyMainContent: true
+  }
+});
+```
+
+### Real-Time Updates with Watcher
+
+Watch crawl progress in real-time:
+
+```javascript
+const start = await app.startCrawl('https://firecrawl.dev', {
+  limit: 5,
+  excludePaths: ['blog/*']
+});
+
+const watch = app.watcher(start.id, {
+  kind: 'crawl',
+  pollInterval: 2
+});
+
+watch.on('document', (doc) => {
+  console.log('DOC', doc.metadata.sourceURL);
+});
+
+watch.on('error', (err) => {
+  console.error('ERR', err);
+});
+
+watch.on('done', (state) => {
+  console.log('DONE', state.status);
+});
+
+await watch.start();
+```
+
+## Agent
+
+Use the AI agent to autonomously gather data from the web:
+
+```javascript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// Simple prompt-based extraction
+const result = await app.agent({
+  prompt: 'Find the founders of Stripe'
+});
+console.log(result.data);
+```
+
+### Agent with Schema
+
+```javascript
+import { z } from 'zod';
+
+const schema = z.object({
+  founders: z.array(z.object({
+    name: z.string().describe('Full name of the founder'),
+    role: z.string().optional().describe('Role or position')
+  }))
+});
+
+const result = await app.agent({
+  prompt: 'Find the founders of Firecrawl',
+  schema
+});
+
+console.log(result.data);
+// {
+//   founders: [
+//     { name: "Eric Ciarla", role: "Co-founder" },
+//     { name: "Nicolas Camara", role: "Co-founder" },
+//     { name: "Caleb Peffer", role: "Co-founder" }
+//   ]
+// }
+```
+
+### Agent with URLs
+
+Focus the agent on specific pages:
+
+```javascript
+const result = await app.agent({
+  urls: ['https://docs.firecrawl.dev', 'https://firecrawl.dev/pricing'],
+  prompt: 'Compare the features and pricing information'
+});
+```
+
+### Model Selection
+
+```javascript
+// Use the pro model for complex tasks
+const result = await app.agent({
+  prompt: 'Compare enterprise features across Firecrawl, Apify, and ScrapingBee',
+  model: 'spark-1-pro'
+});
+
+// Default is spark-1-mini (60% cheaper)
+const result = await app.agent({
+  prompt: 'What is Firecrawl?',
+  model: 'spark-1-mini'  // or omit for default
+});
+```
+
+## Map
+
+Generate a list of all URLs on a website:
+
+```javascript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const mapResult = await app.map('https://firecrawl.dev');
+console.log(mapResult.links);
+```
+
+### Map with Search
+
+```javascript
+// Find URLs related to a specific topic
+const mapResult = await app.map('https://firecrawl.dev', {
+  search: 'pricing'
+});
+// Returns URLs ordered by relevance to "pricing"
+```
+
+## Search
+
+Search the web and optionally scrape results:
+
+```javascript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const results = await app.search('best web scraping tools 2024', {
+  limit: 10
+});
+
+results.data.web.forEach(result => {
+  console.log(`${result.title}: ${result.url}`);
+});
+```
+
+### Search with Content Scraping
+
+```javascript
+const results = await app.search('firecrawl web scraping', {
+  limit: 3,
+  scrapeOptions: {
+    formats: ['markdown', 'links']
+  }
+});
+```
+
+## Batch Scraping
+
+Scrape multiple URLs in parallel:
+
+```javascript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// Auto-wait for completion
+const result = await app.batchScrape(
+  ['https://firecrawl.dev', 'https://docs.firecrawl.dev'],
+  { formats: ['markdown'] }
+);
+
+for (const doc of result.data) {
+  console.log(doc.metadata.sourceURL);
+}
+```
+
+### Async Batch Scrape
+
+```javascript
+// Start batch scrape
+const start = await app.startBatchScrape(
+  ['https://firecrawl.dev', 'https://docs.firecrawl.dev'],
+  { formats: ['markdown'] }
+);
+
+// Check status later
+const status = await app.getBatchScrapeStatus(start.id);
+console.log(`Completed: ${status.completed}/${status.total}`);
+```
+
+### Batch Scrape with Real-Time Updates
+
+```javascript
+const start = await app.startBatchScrape(
+  ['https://firecrawl.dev', 'https://docs.firecrawl.dev'],
+  { formats: ['markdown'] }
+);
+
+const watch = app.watcher(start.id, {
+  kind: 'batch',
+  pollInterval: 2
+});
+
+watch.on('document', (doc) => {
+  console.log('DOC', doc.metadata.sourceURL);
+});
+
+watch.on('done', (state) => {
+  console.log('DONE', state.status);
+});
+
+await watch.start();
+```
+
+## Extract (Deprecated)
+
+<Note>
+The Extract endpoint is deprecated. Use the [Agent](#agent) feature instead for better performance and reliability.
+</Note>
+
+```javascript
+import { z } from 'zod';
+
+const schema = z.object({
+  title: z.string()
+});
+
+const result = await app.extract({
+  urls: ['https://firecrawl.dev'],
+  prompt: 'Extract the page title',
+  schema,
+  showSources: true
+});
+
+console.log(result.data);
+```
+
+## v1 Compatibility
+
+Legacy v1 API is available under `app.v1`:
+
+```javascript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// v1 methods (feature-frozen)
+const scrapeV1 = await app.v1.scrapeUrl('https://firecrawl.dev', {
+  formats: ['markdown', 'html']
+});
+
+const crawlV1 = await app.v1.crawlUrl('https://firecrawl.dev', {
+  limit: 100
+});
+
+const mapV1 = await app.v1.mapUrl('https://firecrawl.dev');
+```
+
+## Error Handling
+
+The SDK throws errors for API failures:
+
+```javascript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+try {
+  const result = await app.scrape('https://example.com');
+} catch (error) {
+  if (error.response?.status === 401) {
+    console.error('Invalid API key');
+  } else if (error.response?.status === 429) {
+    console.error('Rate limit exceeded');
+  } else {
+    console.error('Error:', error.message);
+  }
+}
+```
+
+## Configuration
+
+```javascript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({
+  apiKey: 'fc-YOUR_API_KEY',
+  apiUrl: 'https://api.firecrawl.dev',  // Default
+  timeoutMs: 300000,                     // Request timeout (5 min default)
+  maxRetries: 3,                         // Max retry attempts
+  backoffFactor: 0.5                     // Exponential backoff factor
+});
+```
+
+## TypeScript Support
+
+The SDK is written in TypeScript and provides full type definitions:
+
+```typescript
+import Firecrawl, {
+  type Document,
+  type ScrapeOptions,
+  type CrawlOptions,
+  type AgentOptions
+} from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc: Document = await app.scrape('https://example.com', {
+  formats: ['markdown']
+});
+```
+
+## Requirements
+
+- Node.js 22.0.0 or later
+
+## Resources
+
+- [npm Package](https://www.npmjs.com/package/@mendable/firecrawl-js)
+- [GitHub Repository](https://github.com/firecrawl/firecrawl)
+- [API Reference](/api-reference/introduction)
+- [Examples](https://github.com/firecrawl/firecrawl/tree/main/apps/js-sdk/examples)

@@ -1,0 +1,267 @@
+---
+title: Scrape
+description: Convert any URL to clean markdown, HTML, screenshots, or structured data
+---
+
+The Scrape feature converts any URL into LLM-ready data formats including markdown, HTML, screenshots, and structured JSON. It handles JavaScript rendering, dynamic content, and can interact with pages before extracting data.
+
+## When to Use Scrape
+
+Use Scrape when you need to:
+- Extract content from a single URL
+- Convert web pages to clean markdown for LLM processing
+- Capture screenshots of pages
+- Extract structured data using a schema
+- Interact with pages (login, click, scroll) before scraping
+- Extract brand identity (colors, fonts, typography)
+
+## Basic Usage
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from firecrawl import Firecrawl
+
+    app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+    # Scrape a website
+    result = app.scrape(
+        'https://firecrawl.dev',
+        formats=['markdown', 'html']
+    )
+
+    print(result.markdown)
+    print(result.html)
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    import Firecrawl from '@mendable/firecrawl-js';
+
+    const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+    // Scrape a website
+    const result = await app.scrape('https://firecrawl.dev', {
+      formats: ['markdown', 'html'],
+    });
+
+    console.log(result.markdown);
+    console.log(result.html);
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST 'https://api.firecrawl.dev/v2/scrape' \
+      -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "url": "https://firecrawl.dev",
+        "formats": ["markdown", "html"]
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "markdown": "# Firecrawl Docs\n\nTurn websites into LLM-ready data...",
+    "html": "<!DOCTYPE html><html>...",
+    "metadata": {
+      "title": "Quickstart | Firecrawl",
+      "description": "Firecrawl allows you to turn entire websites into LLM-ready markdown",
+      "sourceURL": "https://docs.firecrawl.dev",
+      "statusCode": 200
+    }
+  }
+}
+```
+
+## Available Formats
+
+You can request multiple formats in a single scrape:
+
+- `markdown` - Clean markdown content
+- `html` - Cleaned HTML
+- `rawHtml` - Original HTML
+- `screenshot` - Base64 encoded screenshot
+- `links` - All links found on the page
+- `json` - Structured data extraction
+- `branding` - Brand identity (colors, fonts, typography)
+
+### Get a Screenshot
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    doc = app.scrape("https://firecrawl.dev", formats=["screenshot"])
+    print(doc.screenshot)  # Base64 encoded image
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const doc = await app.scrape('https://firecrawl.dev', {
+      formats: ['screenshot'],
+    });
+    console.log(doc.screenshot);  // Base64 encoded image
+    ```
+  </Tab>
+</Tabs>
+
+### Extract Brand Identity
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    doc = app.scrape("https://firecrawl.dev", formats=["branding"])
+    print(doc.branding)  # {"colors": {...}, "fonts": [...], "typography": {...}}
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const doc = await app.scrape('https://firecrawl.dev', {
+      formats: ['branding'],
+    });
+    console.log(doc.branding);  // {"colors": {...}, "fonts": [...], "typography": {...}}
+    ```
+  </Tab>
+</Tabs>
+
+## Extract Structured Data
+
+Extract structured data using a schema with JSON mode:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from firecrawl import Firecrawl
+    from pydantic import BaseModel
+
+    app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+    class CompanyInfo(BaseModel):
+        company_mission: str
+        is_open_source: bool
+        is_in_yc: bool
+
+    result = app.scrape(
+        'https://firecrawl.dev',
+        formats=[{"type": "json", "schema": CompanyInfo.model_json_schema()}]
+    )
+
+    print(result.json)
+    ```
+
+    **Output:**
+    ```json
+    {
+      "company_mission": "Turn websites into LLM-ready data",
+      "is_open_source": true,
+      "is_in_yc": true
+    }
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    import Firecrawl from '@mendable/firecrawl-js';
+    import { z } from 'zod';
+
+    const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+    const schema = z.object({
+      company_mission: z.string(),
+      is_open_source: z.boolean(),
+      is_in_yc: z.boolean(),
+    });
+
+    const result = await app.scrape('https://firecrawl.dev', {
+      formats: [{ type: 'json', schema }],
+    });
+
+    console.log(result.json);
+    ```
+  </Tab>
+</Tabs>
+
+### Extract with Prompt (No Schema)
+
+You can also extract data using just a prompt without defining a schema:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    result = app.scrape(
+        'https://firecrawl.dev',
+        formats=[{"type": "json", "prompt": "Extract the company mission"}]
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const result = await app.scrape('https://firecrawl.dev', {
+      formats: [{ type: 'json', prompt: 'Extract the company mission' }],
+    });
+    ```
+  </Tab>
+</Tabs>
+
+## Actions: Interact Before Scraping
+
+Perform actions like clicking, typing, scrolling, and waiting before extracting content:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    doc = app.scrape(
+        url="https://example.com/login",
+        formats=["markdown"],
+        actions=[
+            {"type": "write", "text": "user@example.com"},
+            {"type": "press", "key": "Tab"},
+            {"type": "write", "text": "password"},
+            {"type": "click", "selector": 'button[type="submit"]'},
+            {"type": "wait", "milliseconds": 2000},
+            {"type": "screenshot"}
+        ]
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const doc = await app.scrape('https://example.com/login', {
+      formats: ['markdown'],
+      actions: [
+        { type: 'write', text: 'user@example.com' },
+        { type: 'press', key: 'Tab' },
+        { type: 'write', text: 'password' },
+        { type: 'click', selector: 'button[type="submit"]' },
+        { type: 'wait', milliseconds: 2000 },
+        { type: 'screenshot' },
+      ],
+    });
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+Actions are executed sequentially in the order specified. Use the `wait` action to allow dynamic content to load after interactions.
+</Note>
+
+## Best Practices
+
+<Tip>
+- Request only the formats you need to minimize API usage
+- Use `screenshot` format to verify page rendering
+- For structured extraction, define a clear schema for consistent results
+- Use actions to handle pages requiring authentication or interaction
+- The `branding` format is useful for design research and competitor analysis
+</Tip>
+
+## Next Steps
+
+- Learn about [Batch Scraping](/features/batch-scrape) to scrape multiple URLs efficiently
+- Use [Crawl](/features/crawl) to scrape entire websites
+- Try [Agent](/features/agent) for autonomous data gathering

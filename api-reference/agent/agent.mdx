@@ -1,0 +1,346 @@
+---
+title: 'Agent'
+description: 'Autonomous data gathering with AI'
+---
+
+## POST /v1/agent
+
+<Note>
+  **Note:** Based on the Firecrawl README and examples, the Agent endpoint may be available at `/v2/agent`. Please check the latest API documentation or contact support if you encounter issues.
+</Note>
+
+The Agent endpoint provides autonomous data gathering capabilities. Describe what you need, and the AI agent searches, navigates, and extracts it. No URLs required.
+
+### Authentication
+
+Requires Bearer token authentication. Include your API key in the Authorization header:
+
+```
+Authorization: Bearer fc-YOUR_API_KEY
+```
+
+## Request Body
+
+<ParamField path="prompt" type="string" required>
+  Description of what data you need the agent to find
+</ParamField>
+
+<ParamField path="urls" type="array">
+  Optional array of URLs to focus the agent on specific pages
+</ParamField>
+
+<ParamField path="schema" type="object">
+  JSON Schema for structured output. When provided, the agent will return data matching this schema. Must conform to [JSON Schema](https://json-schema.org/).
+</ParamField>
+
+<ParamField path="model" type="string" default="spark-1-mini">
+  Model to use for the agent. Options:
+  - `spark-1-mini` (default): 60% cheaper, suitable for most tasks
+  - `spark-1-pro`: More powerful, better for complex research and critical extraction
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the request was successful
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The agent's response
+  
+  <ResponseField name="data.result" type="string">
+    Natural language result when no schema is provided
+  </ResponseField>
+  
+  <ResponseField name="data.sources" type="array">
+    URLs used to gather the information
+  </ResponseField>
+</ResponseField>
+
+## Examples
+
+### Basic Agent Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v1/agent' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "prompt": "Find the pricing plans for Notion"
+  }'
+```
+
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+result = app.agent(prompt="Find the pricing plans for Notion")
+print(result.data.result)
+print(f"Sources: {result.data.sources}")
+```
+
+```javascript JavaScript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const result = await app.agent({ prompt: 'Find the pricing plans for Notion' });
+console.log(result.data.result);
+console.log(`Sources: ${result.data.sources}`);
+```
+
+</CodeGroup>
+
+### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "result": "Notion offers the following pricing plans:\n\n1. Free - $0/month...\n2. Plus - $10/seat/month...\n3. Business - $18/seat/month...",
+    "sources": ["https://www.notion.so/pricing"]
+  }
+}
+```
+
+### Agent with Structured Output
+
+Use a schema to get structured JSON data:
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v1/agent' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "prompt": "Find the founders of Firecrawl",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "founders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Full name of the founder"
+              },
+              "role": {
+                "type": "string",
+                "description": "Role or position"
+              }
+            }
+          }
+        }
+      }
+    }
+  }'
+```
+
+```python Python
+from firecrawl import Firecrawl
+from pydantic import BaseModel, Field
+from typing import List, Optional
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+class Founder(BaseModel):
+    name: str = Field(description="Full name of the founder")
+    role: Optional[str] = Field(None, description="Role or position")
+
+class FoundersSchema(BaseModel):
+    founders: List[Founder] = Field(description="List of founders")
+
+result = app.agent(
+    prompt="Find the founders of Firecrawl",
+    schema=FoundersSchema
+)
+
+print(result.data)
+```
+
+```javascript JavaScript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const schema = {
+  type: 'object',
+  properties: {
+    founders: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Full name of the founder'
+          },
+          role: {
+            type: 'string',
+            description: 'Role or position'
+          }
+        }
+      }
+    }
+  }
+};
+
+const result = await app.agent({
+  prompt: 'Find the founders of Firecrawl',
+  schema: schema
+});
+
+console.log(result.data);
+```
+
+</CodeGroup>
+
+### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "founders": [
+      {"name": "Eric Ciarla", "role": "Co-founder"},
+      {"name": "Nicolas Camara", "role": "Co-founder"},
+      {"name": "Caleb Peffer", "role": "Co-founder"}
+    ]
+  }
+}
+```
+
+### Agent with Specific URLs
+
+Focus the agent on specific pages:
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v1/agent' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "urls": ["https://docs.firecrawl.dev", "https://firecrawl.dev/pricing"],
+    "prompt": "Compare the features and pricing information"
+  }'
+```
+
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+result = app.agent(
+    urls=["https://docs.firecrawl.dev", "https://firecrawl.dev/pricing"],
+    prompt="Compare the features and pricing information"
+)
+
+print(result.data.result)
+```
+
+```javascript JavaScript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const result = await app.agent({
+  urls: ['https://docs.firecrawl.dev', 'https://firecrawl.dev/pricing'],
+  prompt: 'Compare the features and pricing information'
+});
+
+console.log(result.data.result);
+```
+
+</CodeGroup>
+
+### Using Pro Model
+
+For complex research tasks, use the `spark-1-pro` model:
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v1/agent' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "prompt": "Compare enterprise features across Firecrawl, Apify, and ScrapingBee",
+    "model": "spark-1-pro"
+  }'
+```
+
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+result = app.agent(
+    prompt="Compare enterprise features across Firecrawl, Apify, and ScrapingBee",
+    model="spark-1-pro"
+)
+
+print(result.data.result)
+```
+
+```javascript JavaScript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const result = await app.agent({
+  prompt: 'Compare enterprise features across Firecrawl, Apify, and ScrapingBee',
+  model: 'spark-1-pro'
+});
+
+console.log(result.data.result);
+```
+
+</CodeGroup>
+
+## When to Use Pro Model
+
+- Comparing data across multiple websites
+- Extracting from sites with complex navigation or authentication
+- Research tasks where the agent needs to explore multiple paths
+- Critical data where accuracy is paramount
+
+## Error Responses
+
+<ResponseField name="400" type="object">
+  **Bad Request** - Invalid request parameters
+  
+  ```json
+  {
+    "success": false,
+    "error": "Invalid parameters provided"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="402" type="object">
+  **Payment Required** - Payment required to access this resource
+  
+  ```json
+  {
+    "error": "Payment required to access this resource."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  **Server Error** - An unexpected error occurred on the server
+  
+  ```json
+  {
+    "success": false,
+    "error": "An unexpected error occurred on the server."
+  }
+  ```
+</ResponseField>

@@ -1,0 +1,366 @@
+---
+title: "Configuration"
+description: "Configure your self-hosted Firecrawl instance with environment variables and settings"
+---
+
+Firecrawl's self-hosted deployment is configured entirely through environment variables in the `.env` file.
+
+## Core Configuration
+
+These settings control the basic operation of your Firecrawl instance.
+
+### Server Settings
+
+```bash
+PORT=3002
+HOST=0.0.0.0
+```
+
+- **PORT:** The port on which the API server will listen (default: 3002)
+- **HOST:** The host address to bind to (use 0.0.0.0 to accept connections from any IP)
+
+<Note>
+The PORT is used by both the main API server and worker liveness check endpoint.
+</Note>
+
+### Authentication
+
+```bash
+USE_DB_AUTHENTICATION=false
+```
+
+- **USE_DB_AUTHENTICATION:** Enable or disable API key authentication (default: false)
+- To enable authentication, you need to set up Supabase (see [Supabase Configuration](#supabase-configuration))
+
+<Warning>
+When running without authentication, anyone with access to your Firecrawl instance can make API requests. Only use `USE_DB_AUTHENTICATION=false` for local development or when your instance is behind a firewall or other authentication layer.
+</Warning>
+
+## Service Configuration
+
+These settings are typically auto-configured by Docker Compose, but can be customized for advanced deployments.
+
+### Redis
+
+```bash
+# Autoconfigured by docker-compose.yaml
+REDIS_URL=redis://redis:6379
+REDIS_RATE_LIMIT_URL=redis://redis:6379
+```
+
+- **REDIS_URL:** Connection URL for the main Redis instance used for job queuing
+- **REDIS_RATE_LIMIT_URL:** Connection URL for Redis instance used for rate limiting
+
+### PostgreSQL
+
+```bash
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=postgres
+POSTGRES_HOST=nuq-postgres
+POSTGRES_PORT=5432
+```
+
+<Warning>
+The default PostgreSQL credentials (`postgres`/`postgres`) are for local development only. Always use strong credentials in production deployments.
+</Warning>
+
+### Playwright Service
+
+```bash
+# Autoconfigured by docker-compose.yaml
+PLAYWRIGHT_MICROSERVICE_URL=http://playwright-service:3000/scrape
+```
+
+The Playwright service handles JavaScript rendering and browser automation. This URL is automatically configured when using Docker Compose.
+
+## AI Features
+
+Enable AI-powered features like JSON extraction and structured data output.
+
+### OpenAI
+
+```bash
+OPENAI_API_KEY=sk-your-api-key-here
+```
+
+Provide your OpenAI API key to enable:
+- JSON format extraction on scrape endpoint
+- Structured data extraction
+- Image alt text generation
+
+### OpenAI-Compatible APIs
+
+```bash
+OPENAI_BASE_URL=https://example.com/v1
+OPENAI_API_KEY=your-api-key
+```
+
+You can use any OpenAI-compatible API by setting a custom base URL.
+
+### Ollama (Experimental)
+
+```bash
+OLLAMA_BASE_URL=http://localhost:11434/api
+MODEL_NAME=deepseek-r1:7b
+MODEL_EMBEDDING_NAME=nomic-embed-text
+```
+
+Use Ollama for local LLM processing:
+- **OLLAMA_BASE_URL:** URL of your Ollama instance
+- **MODEL_NAME:** The model to use for text generation
+- **MODEL_EMBEDDING_NAME:** The model to use for embeddings
+
+<Note>
+Ollama support is experimental. Some features may not work as expected.
+</Note>
+
+## Proxy Configuration
+
+Configure proxy settings for outbound requests.
+
+```bash
+PROXY_SERVER=http://0.1.2.3:1234
+PROXY_USERNAME=username
+PROXY_PASSWORD=password
+```
+
+- **PROXY_SERVER:** Can be a full URL (e.g., `http://0.1.2.3:1234`) or just an IP and port combo (e.g., `0.1.2.3:1234`)
+- **PROXY_USERNAME:** Username for proxy authentication (leave commented if unauthenticated)
+- **PROXY_PASSWORD:** Password for proxy authentication (leave commented if unauthenticated)
+
+<Warning>
+Do not uncomment `PROXY_USERNAME` and `PROXY_PASSWORD` if your proxy is unauthenticated.
+</Warning>
+
+## Search API Configuration
+
+By default, the `/search` API uses Google search. You can configure it to use SearXNG instead.
+
+```bash
+SEARXNG_ENDPOINT=http://your.searxng.server
+SEARXNG_ENGINES=
+SEARXNG_CATEGORIES=
+```
+
+- **SEARXNG_ENDPOINT:** URL of your SearXNG server with JSON format enabled
+- **SEARXNG_ENGINES:** Customize which search engines to use (optional)
+- **SEARXNG_CATEGORIES:** Customize search categories (optional, defaults should work fine)
+
+## Performance and Resource Limits
+
+Configure worker concurrency and system resource thresholds.
+
+### Worker Configuration
+
+These settings are defined in the Docker Compose file and control worker behavior:
+
+```yaml
+NUM_WORKERS_PER_QUEUE=8
+CRAWL_CONCURRENT_REQUESTS=10
+MAX_CONCURRENT_JOBS=5
+BROWSER_POOL_SIZE=5
+```
+
+- **NUM_WORKERS_PER_QUEUE:** Number of worker processes per queue (default: 8)
+- **CRAWL_CONCURRENT_REQUESTS:** Maximum concurrent requests during a crawl (default: 10)
+- **MAX_CONCURRENT_JOBS:** Maximum number of jobs that can run simultaneously (default: 5)
+- **BROWSER_POOL_SIZE:** Number of browser instances to pool (default: 5)
+
+### System Resource Thresholds
+
+```bash
+MAX_CPU=0.8
+MAX_RAM=0.8
+```
+
+- **MAX_CPU:** Maximum CPU usage threshold (0.0-1.0). Worker will reject new jobs when CPU usage exceeds this value (default: 0.8 or 80%)
+- **MAX_RAM:** Maximum RAM usage threshold (0.0-1.0). Worker will reject new jobs when memory usage exceeds this value (default: 0.8 or 80%)
+
+### Docker Resource Limits
+
+The `docker-compose.yaml` file defines resource limits for each service:
+
+**API Service:**
+```yaml
+cpus: 4.0
+mem_limit: 8G
+memswap_limit: 8G
+```
+
+**Playwright Service:**
+```yaml
+cpus: 2.0
+mem_limit: 4G
+memswap_limit: 4G
+MAX_CONCURRENT_PAGES: 10
+```
+
+<Note>
+Increase these limits if you have more CPU cores or RAM available. Adjust based on your workload and infrastructure.
+</Note>
+
+## Advanced Configuration
+
+### Admin UI
+
+```bash
+BULL_AUTH_KEY=CHANGEME
+```
+
+This key protects access to the Bull Queue Manager UI at `http://localhost:3002/admin/{BULL_AUTH_KEY}/queues`.
+
+<Warning>
+Always change `BULL_AUTH_KEY` to a strong secret, especially on any deployment reachable from untrusted networks.
+</Warning>
+
+### PDF Parsing
+
+```bash
+LLAMAPARSE_API_KEY=your-llamaparse-key
+```
+
+Set this if you have a LlamaParse API key for enhanced PDF parsing capabilities.
+
+### Webhooks
+
+```bash
+ALLOW_LOCAL_WEBHOOKS=true
+```
+
+Enable this if you'd like to allow local webhooks to be sent to your self-hosted instance.
+
+### Monitoring
+
+```bash
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+```
+
+Set a Slack webhook URL to receive server health status messages and alerts.
+
+### Supabase Configuration
+
+```bash
+SUPABASE_ANON_TOKEN=your-anon-token
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_TOKEN=your-service-token
+```
+
+<Note>
+Right now it's not possible to configure Supabase in self-hosted instances. These settings are reserved for future use.
+</Note>
+
+### Test API Key
+
+```bash
+TEST_API_KEY=your-test-key
+```
+
+Use this if you've set up authentication and want to test with a real API key.
+
+## Troubleshooting
+
+### Supabase Client Errors
+
+**Symptom:**
+```bash
+[YYYY-MM-DDTHH:MM:SS.SSSz]ERROR - Attempted to access Supabase client when it's not configured.
+[YYYY-MM-DDTHH:MM:SS.SSSz]ERROR - Error inserting scrape event: Error: Supabase client is not configured.
+```
+
+**Solution:** This error is expected and can be ignored. The Supabase client setup is not completed in self-hosted instances. You should be able to scrape and crawl with no problems.
+
+### Authentication Bypass Warning
+
+**Symptom:**
+```bash
+[YYYY-MM-DDTHH:MM:SS.SSSz]WARN - You're bypassing authentication
+```
+
+**Solution:** This warning occurs because `USE_DB_AUTHENTICATION=false`. This is expected for self-hosted instances. You should be able to scrape and crawl with no problems.
+
+### Docker Container Failures
+
+**Symptom:** Docker containers exit unexpectedly or fail to start.
+
+**Solution:**
+```bash
+docker logs [container_name]
+```
+
+- Ensure all required environment variables are set correctly in the `.env` file
+- Verify that all Docker services defined in `docker-compose.yaml` are correctly configured
+- Check that necessary images are available
+
+### Redis Connection Issues
+
+**Symptom:** Errors related to connecting to Redis, such as timeouts or "Connection refused".
+
+**Solution:**
+- Ensure that the Redis service is up and running in your Docker environment
+- Verify that `REDIS_URL` and `REDIS_RATE_LIMIT_URL` in your `.env` file point to `redis://redis:6379`
+- Check network settings and firewall rules that may block the connection to the Redis port
+
+### API Endpoint Not Responding
+
+**Symptom:** API requests to the Firecrawl instance timeout or return no response.
+
+**Solution:**
+- Ensure that the Firecrawl service is running by checking the Docker container status
+- Verify that the `PORT` and `HOST` settings in your `.env` file are correct
+- Check that no other service is using the same port
+- Verify the network configuration to ensure the host is accessible from the client making the API request
+
+## Environment Variables Reference
+
+Here's a complete example `.env` file with all available options:
+
+```bash
+# ===== Required ENVS ======
+PORT=3002
+HOST=0.0.0.0
+USE_DB_AUTHENTICATION=false
+
+# ===== Optional ENVS ======
+
+## === AI features ===
+# OPENAI_API_KEY=
+# OLLAMA_BASE_URL=http://localhost:11434/api
+# MODEL_NAME=deepseek-r1:7b
+# MODEL_EMBEDDING_NAME=nomic-embed-text
+# OPENAI_BASE_URL=https://example.com/v1
+
+## === Proxy ===
+# PROXY_SERVER=
+# PROXY_USERNAME=
+# PROXY_PASSWORD=
+
+## === Search API ===
+# SEARXNG_ENDPOINT=http://your.searxng.server
+# SEARXNG_ENGINES=
+# SEARXNG_CATEGORIES=
+
+## === Database ===
+# POSTGRES_USER=firecrawl
+# POSTGRES_PASSWORD=firecrawl_password
+# POSTGRES_DB=firecrawl
+
+## === Other ===
+BULL_AUTH_KEY=CHANGEME
+# LLAMAPARSE_API_KEY=
+# SLACK_WEBHOOK_URL=
+# TEST_API_KEY=
+# SUPABASE_ANON_TOKEN=
+# SUPABASE_URL=
+# SUPABASE_SERVICE_TOKEN=
+
+## === System Resources ===
+# MAX_CPU=0.8
+# MAX_RAM=0.8
+# ALLOW_LOCAL_WEBHOOKS=true
+
+## === Autoconfigured by docker-compose.yaml ===
+# PLAYWRIGHT_MICROSERVICE_URL=http://playwright-service:3000/scrape
+# REDIS_URL=redis://redis:6379
+# REDIS_RATE_LIMIT_URL=redis://redis:6379
+```

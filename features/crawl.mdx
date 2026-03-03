@@ -1,0 +1,372 @@
+---
+title: Crawl
+description: Crawl an entire website and extract content from all pages
+---
+
+The Crawl feature allows you to scrape all pages of a website with a single request. It automatically discovers URLs, respects your limits and filters, and scrapes each page according to your specifications.
+
+## When to Use Crawl
+
+Use Crawl when you need to:
+- Extract content from an entire website or documentation site
+- Build a knowledge base from web content
+- Index website content for search
+- Monitor website changes over time
+- Create datasets from multi-page websites
+
+## Basic Usage
+
+<Steps>
+  <Step title="Start a Crawl">
+    <Tabs>
+      <Tab title="Python">
+        ```python
+        from firecrawl import Firecrawl
+        from firecrawl.types import ScrapeOptions
+
+        app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+        # Crawl a website (automatically waits for completion)
+        result = app.crawl(
+            'https://docs.firecrawl.dev',
+            limit=100,
+            scrape_options=ScrapeOptions(formats=['markdown', 'html'])
+        )
+
+        for doc in result.data:
+            print(doc.metadata.source_url, doc.markdown[:100])
+        ```
+      </Tab>
+      <Tab title="JavaScript">
+        ```javascript
+        import Firecrawl from '@mendable/firecrawl-js';
+
+        const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+        // Crawl a website (automatically waits for completion)
+        const result = await app.crawl('https://docs.firecrawl.dev', {
+          limit: 100,
+          scrapeOptions: { formats: ['markdown', 'html'] },
+        });
+
+        result.data.forEach(doc => {
+          console.log(doc.metadata.sourceURL, doc.markdown.substring(0, 100));
+        });
+        ```
+      </Tab>
+      <Tab title="cURL">
+        ```bash
+        curl -X POST 'https://api.firecrawl.dev/v2/crawl' \
+          -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "url": "https://docs.firecrawl.dev",
+            "limit": 100,
+            "scrapeOptions": {
+              "formats": ["markdown"]
+            }
+          }'
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+  
+  <Step title="Response">
+    The initial response contains a job ID:
+    
+    ```json
+    {
+      "success": true,
+      "id": "123-456-789",
+      "url": "https://api.firecrawl.dev/v2/crawl/123-456-789"
+    }
+    ```
+  </Step>
+  
+  <Step title="Check Status (if using async)">
+    <Tabs>
+      <Tab title="Python">
+        ```python
+        crawl_status = app.get_crawl_status("<crawl_id>")
+        print(crawl_status)
+        ```
+      </Tab>
+      <Tab title="JavaScript">
+        ```javascript
+        const status = await app.getCrawlStatus(id);
+        console.log(status);
+        ```
+      </Tab>
+      <Tab title="cURL">
+        ```bash
+        curl -X GET 'https://api.firecrawl.dev/v2/crawl/123-456-789' \
+          -H 'Authorization: Bearer fc-YOUR_API_KEY'
+        ```
+      </Tab>
+    </Tabs>
+
+    **Status Response:**
+    ```json
+    {
+      "status": "completed",
+      "total": 50,
+      "completed": 50,
+      "creditsUsed": 50,
+      "data": [
+        {
+          "markdown": "# Page Title\n\nContent...",
+          "metadata": {
+            "title": "Page Title",
+            "sourceURL": "https://..."
+          }
+        }
+      ]
+    }
+    ```
+  </Step>
+</Steps>
+
+<Note>
+The SDKs handle polling automatically, waiting for the crawl to complete before returning results.
+</Note>
+
+## Asynchronous Crawling
+
+For long-running crawls, start the job asynchronously and poll for status:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from firecrawl.types import ScrapeOptions
+
+    # Start crawl asynchronously
+    crawl_job = app.start_crawl(
+        'https://docs.firecrawl.dev',
+        limit=100,
+        scrape_options=ScrapeOptions(formats=['markdown', 'html'])
+    )
+
+    print(f"Crawl started with ID: {crawl_job.id}")
+
+    # Check status later
+    status = app.get_crawl_status(crawl_job.id)
+    print(f"Status: {status.status}")
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    // Start crawl asynchronously
+    const start = await app.startCrawl('https://docs.firecrawl.dev', {
+      limit: 100,
+      scrapeOptions: { formats: ['markdown', 'html'] },
+    });
+
+    console.log(`Crawl started with ID: ${start.id}`);
+
+    // Check status later
+    const status = await app.getCrawlStatus(start.id);
+    console.log(`Status: ${status.status}`);
+    ```
+  </Tab>
+</Tabs>
+
+## Crawl Options
+
+### Control Crawl Depth
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    result = app.crawl(
+        'https://docs.firecrawl.dev',
+        max_depth=2,  # Max URL depth
+        limit=100
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const result = await app.crawl('https://docs.firecrawl.dev', {
+      maxDepth: 2,  // Max URL depth
+      limit: 100,
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Include/Exclude Paths
+
+Use regex patterns to filter URLs:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    result = app.crawl(
+        'https://firecrawl.dev',
+        include_paths=['blog/.*'],  # Only crawl blog pages
+        exclude_paths=['blog/.*-draft'],  # Exclude drafts
+        limit=50
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const result = await app.crawl('https://firecrawl.dev', {
+      includePaths: ['blog/.*'],  // Only crawl blog pages
+      excludePaths: ['blog/.*-draft'],  // Exclude drafts
+      limit: 50,
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Allow Backward and External Links
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    result = app.crawl(
+        'https://firecrawl.dev',
+        allow_backward_links=True,  # Crawl sibling/parent URLs
+        allow_external_links=True,  # Follow external links
+        limit=100
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const result = await app.crawl('https://firecrawl.dev', {
+      allowBackwardLinks: true,  // Crawl sibling/parent URLs
+      allowExternalLinks: true,  // Follow external links
+      limit: 100,
+    });
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+- `allowBackwardLinks: false` - Only crawls deeper (child) URLs
+- `allowBackwardLinks: true` - Crawls any internal links, including siblings and parents
+- `allowExternalLinks: true` - Follows links to external websites
+</Note>
+
+### Ignore Sitemap
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    result = app.crawl(
+        'https://firecrawl.dev',
+        ignore_sitemap=True,  # Don't use sitemap.xml
+        limit=50
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const result = await app.crawl('https://firecrawl.dev', {
+      ignoreSitemap: true,  // Don't use sitemap.xml
+      limit: 50,
+    });
+    ```
+  </Tab>
+</Tabs>
+
+## Real-Time Updates with WebSockets
+
+Get updates as pages are crawled:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    import nest_asyncio
+    nest_asyncio.apply()
+
+    # Define event handlers
+    def on_document(detail):
+        print("DOC", detail)
+
+    def on_error(detail):
+        print("ERR", detail['error'])
+
+    def on_done(detail):
+        print("DONE", detail['status'])
+
+    # Start crawl with watcher
+    async def start_crawl_and_watch():
+        watcher = app.crawl_url_and_watch(
+            'firecrawl.dev',
+            exclude_paths=['blog/*'],
+            limit=5
+        )
+
+        # Add event listeners
+        watcher.add_event_listener("document", on_document)
+        watcher.add_event_listener("error", on_error)
+        watcher.add_event_listener("done", on_done)
+
+        # Start the watcher
+        await watcher.connect()
+
+    # Run the event loop
+    await start_crawl_and_watch()
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const start = await app.startCrawl('https://firecrawl.dev', {
+      excludePaths: ['blog/*'],
+      limit: 5,
+    });
+
+    const watch = app.watcher(start.id, { kind: 'crawl', pollInterval: 2 });
+
+    watch.on('document', (doc) => {
+      console.log('DOC', doc);
+    });
+
+    watch.on('error', (err) => {
+      console.error('ERR', err);
+    });
+
+    watch.on('done', (state) => {
+      console.log('DONE', state.status);
+    });
+
+    await watch.start();
+    ```
+  </Tab>
+</Tabs>
+
+## Cancel a Crawl
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    cancel_result = app.cancel_crawl(crawl_id)
+    print(cancel_result)
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    await app.cancelCrawl(crawlId);
+    ```
+  </Tab>
+</Tabs>
+
+## Best Practices
+
+<Tip>
+- Use `limit` to control costs and crawl time
+- Set appropriate `maxDepth` to avoid crawling too deep
+- Use `includePaths` and `excludePaths` to focus on relevant content
+- Enable WebSocket watchers for real-time monitoring of large crawls
+- Set a `delay` between scrapes to respect website rate limits
+- Start with a small `limit` to test your configuration before scaling up
+</Tip>
+
+## Next Steps
+
+- Learn about [Map](/features/map) to discover URLs before crawling
+- Use [Batch Scrape](/features/batch-scrape) for known lists of URLs
+- Try [Search](/features/search) to find and scrape search results

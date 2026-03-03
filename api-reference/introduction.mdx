@@ -1,33 +1,159 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: "API Reference Introduction"
+description: "Get started with the Firecrawl API to scrape, crawl, and extract structured data from websites"
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+Welcome to the Firecrawl API reference documentation. Firecrawl is an API service that scrapes, crawls, and extracts structured data from any website, providing LLM-ready output for AI applications.
 
-## Welcome
+## Base URL
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
+All API requests should be made to:
 
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+```
+https://api.firecrawl.dev/v1
+```
 
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+Firecrawl uses Bearer token authentication. Include your API key in the `Authorization` header of every request:
+
+```bash
+Authorization: Bearer fc-YOUR_API_KEY
+```
+
+### Getting Your API Key
+
+1. Sign up at [firecrawl.dev](https://firecrawl.dev)
+2. Navigate to your dashboard to obtain your API key
+3. Keep your API key secure and never commit it to version control
+
+### Example Request
+
+```bash
+curl -X POST 'https://api.firecrawl.dev/v1/scrape' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"url": "https://example.com"}'
+```
+
+## API Endpoints
+
+The Firecrawl API is organized around the following main capabilities:
+
+### Scraping
+
+- **POST /scrape** - Scrape a single URL and optionally extract information using an LLM
+- **POST /batch/scrape** - Scrape multiple URLs in a single batch operation
+- **GET /batch/scrape/{id}** - Get the status of a batch scrape job
+- **DELETE /batch/scrape/{id}** - Cancel a batch scrape job
+- **GET /batch/scrape/{id}/errors** - Get errors from a batch scrape job
+
+### Crawling
+
+- **POST /crawl** - Crawl multiple URLs based on options starting from a base URL
+- **GET /crawl/{id}** - Get the status of a crawl job
+- **DELETE /crawl/{id}** - Cancel a crawl job
+- **GET /crawl/{id}/errors** - Get errors from a crawl job
+- **GET /crawl/active** - Get all active crawls for your team
+
+### Mapping
+
+- **POST /map** - Discover and map all URLs on a website
+
+### Extraction
+
+- **POST /extract** - Extract structured data from pages using LLMs
+- **GET /extract/{id}** - Get the status of an extract job
+
+### Search
+
+- **POST /search** - Search the web and optionally scrape search results
+
+### Research
+
+- **POST /deep-research** - Start a deep research operation on a query
+- **GET /deep-research/{id}** - Get the status and results of a deep research operation
+
+### Billing
+
+- **GET /team/credit-usage** - Get remaining credits for your team
+- **GET /team/token-usage** - Get remaining tokens for your team (Extract only)
+
+## Response Format
+
+All API responses follow a consistent structure:
+
+### Success Response
 
 ```json
-"security": [
-  {
-    "bearerAuth": []
+{
+  "success": true,
+  "data": {
+    // Response data specific to the endpoint
   }
-]
+}
 ```
+
+### Error Response
+
+```json
+{
+  "success": false,
+  "error": "Error message describing what went wrong"
+}
+```
+
+## Common HTTP Status Codes
+
+<ResponseField name="200" type="OK">
+  Request succeeded. The response body contains the requested data.
+</ResponseField>
+
+<ResponseField name="400" type="Bad Request">
+  The request was invalid or malformed. Check your request parameters.
+</ResponseField>
+
+<ResponseField name="401" type="Unauthorized">
+  Authentication failed. Check that your API key is valid and properly formatted.
+</ResponseField>
+
+<ResponseField name="402" type="Payment Required">
+  Your account has insufficient credits to complete this request.
+</ResponseField>
+
+<ResponseField name="404" type="Not Found">
+  The requested resource (e.g., job ID) was not found.
+</ResponseField>
+
+<ResponseField name="408" type="Request Timeout">
+  The request took too long to complete and timed out.
+</ResponseField>
+
+<ResponseField name="429" type="Too Many Requests">
+  You've exceeded the rate limit. See [Rate Limits](/api-reference/rate-limits) for details.
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  An unexpected error occurred on the server. If this persists, contact support.
+</ResponseField>
+
+## Content Type
+
+All POST requests should include the `Content-Type: application/json` header, and request bodies should be valid JSON.
+
+## SDKs
+
+While you can interact with the API directly using HTTP requests, we provide official SDKs for easier integration:
+
+- **Python**: `pip install firecrawl-py`
+- **Node.js**: `npm install @mendable/firecrawl-js`
+- **Go**: [firecrawl-go](https://github.com/mendableai/firecrawl-go)
+- **Rust**: See [Rust SDK documentation](https://docs.firecrawl.dev/sdks/rust)
+
+## Support
+
+If you encounter issues or have questions:
+
+- Check the [documentation](https://docs.firecrawl.dev)
+- Join our [Discord community](https://discord.com/invite/gSmWdAkdwd)
+- Contact [support@firecrawl.dev](mailto:support@firecrawl.dev)

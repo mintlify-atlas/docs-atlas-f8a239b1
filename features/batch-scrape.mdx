@@ -1,0 +1,412 @@
+---
+title: Batch Scrape
+description: Scrape multiple URLs asynchronously with parallel processing
+---
+
+Batch Scrape allows you to scrape multiple URLs efficiently with parallel processing. It's ideal when you have a list of specific URLs to scrape and want to process them all at once.
+
+## When to Use Batch Scrape
+
+Use Batch Scrape when you need to:
+- Scrape a known list of URLs
+- Process hundreds or thousands of pages in parallel
+- Extract data from multiple pages with the same structure
+- Update data from a list of product pages, articles, or profiles
+- Scrape URLs discovered from Map or other sources
+
+## Basic Usage
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from firecrawl import Firecrawl
+
+    app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+    # Batch scrape multiple URLs (waits for completion)
+    job = app.batch_scrape(
+        [
+            "https://firecrawl.dev",
+            "https://docs.firecrawl.dev",
+            "https://firecrawl.dev/pricing"
+        ],
+        formats=["markdown"]
+    )
+
+    for doc in job.data:
+        print(doc.metadata.source_url)
+        print(doc.markdown[:100])
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    import Firecrawl from '@mendable/firecrawl-js';
+
+    const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+    // Batch scrape multiple URLs (waits for completion)
+    const result = await app.batchScrape(
+      ['https://firecrawl.dev', 'https://docs.firecrawl.dev', 'https://firecrawl.dev/pricing'],
+      { formats: ['markdown'] }
+    );
+
+    result.data.forEach(doc => {
+      console.log(doc.metadata.sourceURL);
+      console.log(doc.markdown.substring(0, 100));
+    });
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST 'https://api.firecrawl.dev/v2/batch/scrape' \
+      -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "urls": [
+          "https://firecrawl.dev",
+          "https://docs.firecrawl.dev",
+          "https://firecrawl.dev/pricing"
+        ],
+        "formats": ["markdown"]
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+The SDKs automatically wait for batch scraping to complete. For manual control, use the async methods below.
+</Note>
+
+## Asynchronous Batch Scrape
+
+For large batches, start the job asynchronously and poll for status:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    # Start batch scrape asynchronously
+    batch_job = app.start_batch_scrape(
+        ["https://firecrawl.dev", "https://docs.firecrawl.dev"],
+        formats=["markdown", "html"]
+    )
+
+    print(f"Batch job started with ID: {batch_job.id}")
+
+    # Check status later
+    status = app.get_batch_scrape_status(batch_job.id)
+    print(f"Status: {status.status}")
+    print(f"Completed: {status.completed}/{status.total}")
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    // Start batch scrape asynchronously
+    const start = await app.startBatchScrape(
+      ['https://firecrawl.dev', 'https://docs.firecrawl.dev'],
+      { formats: ['markdown', 'html'] }
+    );
+
+    console.log(`Batch job started with ID: ${start.id}`);
+
+    // Check status later
+    const status = await app.getBatchScrapeStatus(start.id);
+    console.log(`Status: ${status.status}`);
+    console.log(`Completed: ${status.completed}/${status.total}`);
+    ```
+  </Tab>
+</Tabs>
+
+## Batch Scrape with Structured Data
+
+Extract structured data from multiple pages:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from pydantic import BaseModel
+    from typing import List
+
+    class ProductInfo(BaseModel):
+        name: str
+        price: str
+        features: List[str]
+
+    result = app.batch_scrape(
+        [
+            "https://example.com/product1",
+            "https://example.com/product2",
+            "https://example.com/product3"
+        ],
+        formats=[{"type": "json", "schema": ProductInfo.model_json_schema()}]
+    )
+
+    for doc in result.data:
+        print(f"Product: {doc.json}")
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    import { z } from 'zod';
+
+    const productSchema = z.object({
+      name: z.string(),
+      price: z.string(),
+      features: z.array(z.string()),
+    });
+
+    const result = await app.batchScrape(
+      [
+        'https://example.com/product1',
+        'https://example.com/product2',
+        'https://example.com/product3',
+      ],
+      {
+        formats: [{ type: 'json', schema: productSchema }],
+      }
+    );
+
+    result.data.forEach(doc => {
+      console.log(`Product: ${JSON.stringify(doc.json)}`);
+    });
+    ```
+  </Tab>
+</Tabs>
+
+## Real-Time Updates
+
+Receive updates as pages are scraped:
+
+<Tabs>
+  <Tab title="JavaScript">
+    ```javascript
+    const start = await app.startBatchScrape(
+      ['https://firecrawl.dev', 'https://mendable.ai'],
+      { formats: ['markdown', 'html'] }
+    );
+
+    const watch = app.watcher(start.id, { kind: 'batch', pollInterval: 2 });
+
+    watch.on('document', (doc) => {
+      console.log('DOC', doc);
+    });
+
+    watch.on('error', (err) => {
+      console.error('ERR', err);
+    });
+
+    watch.on('done', (state) => {
+      console.log('DONE', state.status);
+    });
+
+    await watch.start();
+    ```
+  </Tab>
+</Tabs>
+
+## Manual Pagination
+
+For very large batches, you can manually paginate through results:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from firecrawl.v2.types import PaginationConfig
+
+    # Start batch scrape
+    batch_job = app.start_batch_scrape(
+        ["https://firecrawl.dev"],
+        formats=["markdown"]
+    )
+
+    # Fetch one page at a time
+    status = app.get_batch_scrape_status(
+        batch_job.id,
+        pagination_config=PaginationConfig(auto_paginate=False)
+    )
+
+    # Get next page if available
+    if status.next:
+        page2 = app.get_batch_scrape_status_page(status.next)
+    ```
+  </Tab>
+</Tabs>
+
+## Webhooks
+
+Receive notifications when pages are scraped:
+
+<Tabs>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST 'https://api.firecrawl.dev/v2/batch/scrape' \
+      -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "urls": ["https://firecrawl.dev", "https://docs.firecrawl.dev"],
+        "formats": ["markdown"],
+        "webhook": {
+          "url": "https://your-webhook.com/endpoint",
+          "headers": {
+            "Authorization": "Bearer your-token"
+          },
+          "events": ["page", "completed", "failed"],
+          "metadata": {
+            "job_id": "custom-identifier"
+          }
+        }
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+### Webhook Events
+
+- `batch_scrape.started` - Job has started
+- `batch_scrape.page` - A page has been scraped
+- `batch_scrape.completed` - All pages scraped successfully
+- `batch_scrape.failed` - Job failed
+
+## Handling Invalid URLs
+
+Ignore invalid URLs instead of failing the entire batch:
+
+<Tabs>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST 'https://api.firecrawl.dev/v2/batch/scrape' \
+      -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "urls": [
+          "https://firecrawl.dev",
+          "invalid-url",
+          "https://docs.firecrawl.dev"
+        ],
+        "formats": ["markdown"],
+        "ignoreInvalidURLs": true
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+Invalid URLs will be returned in the `invalidURLs` field of the response.
+
+## Cancel a Batch Job
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    cancel_result = app.cancel_batch_scrape(batch_job_id)
+    print(cancel_result)
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    await app.cancelBatchScrape(batchJobId);
+    ```
+  </Tab>
+</Tabs>
+
+## Use Cases
+
+### Scrape URLs from Map
+
+<Steps>
+  <Step title="Map the website">
+    ```python
+    # Discover all URLs
+    map_result = app.map("https://docs.firecrawl.dev")
+    urls = [link.url for link in map_result.links]
+    print(f"Found {len(urls)} URLs")
+    ```
+  </Step>
+  <Step title="Batch scrape discovered URLs">
+    ```python
+    # Scrape all URLs in parallel
+    result = app.batch_scrape(urls, formats=["markdown"])
+    print(f"Scraped {len(result.data)} pages")
+    ```
+  </Step>
+</Steps>
+
+### Update Product Catalog
+
+```python
+from pydantic import BaseModel
+from typing import Optional
+
+class Product(BaseModel):
+    name: str
+    price: str
+    in_stock: bool
+    description: Optional[str] = None
+
+# List of product URLs to update
+product_urls = [
+    "https://store.example.com/product/1",
+    "https://store.example.com/product/2",
+    # ... more URLs
+]
+
+result = app.batch_scrape(
+    product_urls,
+    formats=[{"type": "json", "schema": Product.model_json_schema()}]
+)
+
+# Process results
+for doc in result.data:
+    product = doc.json
+    # Update your database
+    print(f"Updated: {product['name']} - ${product['price']}")
+```
+
+### Monitor Competitor Prices
+
+```python
+import schedule
+import time
+
+def check_prices():
+    competitor_urls = [
+        "https://competitor1.com/pricing",
+        "https://competitor2.com/pricing",
+        "https://competitor3.com/pricing"
+    ]
+    
+    result = app.batch_scrape(
+        competitor_urls,
+        formats=[{"type": "json", "prompt": "Extract all pricing plans"}]
+    )
+    
+    for doc in result.data:
+        print(f"Competitor: {doc.metadata.source_url}")
+        print(f"Pricing: {doc.json}")
+
+# Run daily
+schedule.every().day.at("09:00").do(check_prices)
+```
+
+## Best Practices
+
+<Tip>
+- Use Batch Scrape for lists of known URLs, not for discovering URLs
+- Combine with Map to discover URLs first, then batch scrape them
+- Use webhooks for very large batches to avoid polling
+- Set `ignoreInvalidURLs: true` when working with uncertain URL lists
+- Request only the formats you need to minimize processing time
+- Use structured extraction with schemas for consistent data
+- Consider rate limits and costs when batch scraping thousands of URLs
+</Tip>
+
+## Limits and Performance
+
+- URLs are processed in parallel for maximum speed
+- No hard limit on the number of URLs per batch
+- Each URL counts as one scrape credit
+- Failed URLs can be retried individually
+
+## Next Steps
+
+- Learn about [Map](/features/map) to discover URLs for batch scraping
+- Use [Crawl](/features/crawl) when you need to scrape an entire site
+- Try [Scrape](/features/scrape) for individual URLs with more control

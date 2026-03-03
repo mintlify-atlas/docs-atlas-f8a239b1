@@ -1,0 +1,426 @@
+---
+title: 'Manual Pagination'
+description: 'Manually control pagination for crawl and batch scrape status responses'
+---
+
+By default, Firecrawl SDKs automatically paginate through all results when checking the status of crawls and batch scrapes. However, you can disable auto-pagination to manually fetch results one page at a time.
+
+## Why Use Manual Pagination?
+
+Manual pagination is useful when you want to:
+
+- Process results incrementally as they become available
+- Reduce memory usage by not loading all results at once
+- Implement custom caching or rate limiting logic
+- Display progress to users in real-time
+- Handle very large result sets more efficiently
+
+## How Pagination Works
+
+When a crawl or batch scrape job has more data than can fit in a single response, Firecrawl includes a `next` field in the status response. This opaque URL can be passed back to the SDK to fetch the next page of results.
+
+<Warning>
+The `next` URL is opaque and should not be parsed or modified. Always pass it directly to the SDK methods.
+</Warning>
+
+## Manual Pagination for Crawls
+
+Disable auto-pagination and fetch results one page at a time:
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+from firecrawl.v2.types import PaginationConfig
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# Start the crawl
+crawl_job = app.start_crawl("https://firecrawl.dev", limit=100)
+print(f"Crawl started: {crawl_job.id}")
+
+# Fetch first page of results (auto_paginate=False)
+status = app.get_crawl_status(
+    crawl_job.id,
+    pagination_config=PaginationConfig(auto_paginate=False)
+)
+
+print(f"Status: {status.status}")
+print(f"Results in this page: {len(status.data)}")
+print(f"Total: {status.total}")
+print(f"Completed: {status.completed}")
+
+# Process first page of results
+for doc in status.data:
+    print(f"- {doc.metadata.get('sourceURL')}")
+
+# Fetch next page if available
+if status.next:
+    page2 = app.get_crawl_status_page(status.next)
+    print(f"\nPage 2 results: {len(page2.data)}")
+    for doc in page2.data:
+        print(f"- {doc.metadata.get('sourceURL')}")
+    
+    # Continue fetching pages
+    if page2.next:
+        page3 = app.get_crawl_status_page(page2.next)
+        # ... and so on
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// Start the crawl
+const crawlJob = await app.startCrawl({
+  url: 'https://firecrawl.dev',
+  limit: 100
+});
+console.log(`Crawl started: ${crawlJob.id}`);
+
+// Fetch first page of results (autoPaginate: false)
+const status = await app.getCrawlStatus(crawlJob.id, {
+  autoPaginate: false
+});
+
+console.log(`Status: ${status.status}`);
+console.log(`Results in this page: ${status.data.length}`);
+console.log(`Total: ${status.total}`);
+console.log(`Completed: ${status.completed}`);
+
+// Process first page of results
+status.data.forEach(doc => {
+  console.log(`- ${doc.metadata.sourceURL}`);
+});
+
+// Fetch next page if available
+if (status.next) {
+  const page2 = await app.getCrawlStatusPage(status.next);
+  console.log(`\nPage 2 results: ${page2.data.length}`);
+  page2.data.forEach(doc => {
+    console.log(`- ${doc.metadata.sourceURL}`);
+  });
+  
+  // Continue fetching pages
+  if (page2.next) {
+    const page3 = await app.getCrawlStatusPage(page2.next);
+    // ... and so on
+  }
+}
+```
+
+```bash cURL
+# Start the crawl
+curl -X POST 'https://api.firecrawl.dev/v2/crawl' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://firecrawl.dev",
+    "limit": 100,
+    "scrapeOptions": {"formats": ["markdown"]}
+  }'
+
+# Response: {"success": true, "id": "123-456-789", "url": "..."}
+
+# Check status (first page)
+curl -X GET 'https://api.firecrawl.dev/v2/crawl/123-456-789' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY'
+
+# If response contains "next" field, fetch next page:
+curl -X GET '<next_url_from_response>' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY'
+```
+</CodeGroup>
+
+## Manual Pagination for Batch Scrapes
+
+The process is identical for batch scrape operations:
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+from firecrawl.v2.types import PaginationConfig
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# Start the batch scrape
+batch_job = app.start_batch_scrape([
+    "https://firecrawl.dev",
+    "https://docs.firecrawl.dev",
+    "https://firecrawl.dev/pricing",
+    # ... many more URLs
+])
+print(f"Batch scrape started: {batch_job.id}")
+
+# Fetch first page of results
+status = app.get_batch_scrape_status(
+    batch_job.id,
+    pagination_config=PaginationConfig(auto_paginate=False)
+)
+
+print(f"Status: {status.status}")
+print(f"Results in this page: {len(status.data)}")
+
+# Process first page
+for doc in status.data:
+    print(f"- {doc.metadata.get('sourceURL')}")
+
+# Fetch next page if available
+if status.next:
+    page2 = app.get_batch_scrape_status_page(status.next)
+    print(f"\nPage 2 results: {len(page2.data)}")
+    for doc in page2.data:
+        print(f"- {doc.metadata.get('sourceURL')}")
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// Start the batch scrape
+const batchJob = await app.startBatchScrape({
+  urls: [
+    'https://firecrawl.dev',
+    'https://docs.firecrawl.dev',
+    'https://firecrawl.dev/pricing',
+    // ... many more URLs
+  ]
+});
+console.log(`Batch scrape started: ${batchJob.id}`);
+
+// Fetch first page of results
+const status = await app.getBatchScrapeStatus(batchJob.id, {
+  autoPaginate: false
+});
+
+console.log(`Status: ${status.status}`);
+console.log(`Results in this page: ${status.data.length}`);
+
+// Process first page
+status.data.forEach(doc => {
+  console.log(`- ${doc.metadata.sourceURL}`);
+});
+
+// Fetch next page if available
+if (status.next) {
+  const page2 = await app.getBatchScrapeStatusPage(status.next);
+  console.log(`\nPage 2 results: ${page2.data.length}`);
+  page2.data.forEach(doc => {
+    console.log(`- ${doc.metadata.sourceURL}`);
+  });
+}
+```
+</CodeGroup>
+
+## Implementing a Pagination Loop
+
+Here's a complete example that fetches all pages manually:
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+from firecrawl.v2.types import PaginationConfig
+import time
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# Start the crawl
+crawl_job = app.start_crawl("https://docs.firecrawl.dev", limit=200)
+print(f"Crawl started: {crawl_job.id}")
+
+all_results = []
+next_url = None
+page_num = 1
+
+# Wait for crawl to complete or have results
+while True:
+    if next_url:
+        # Fetch next page using the next URL
+        status = app.get_crawl_status_page(next_url)
+    else:
+        # Fetch first page
+        status = app.get_crawl_status(
+            crawl_job.id,
+            pagination_config=PaginationConfig(auto_paginate=False)
+        )
+    
+    print(f"\nPage {page_num}: {len(status.data)} results")
+    print(f"Overall progress: {status.completed}/{status.total}")
+    
+    # Collect results from this page
+    all_results.extend(status.data)
+    
+    # Check if there are more pages
+    if status.next:
+        next_url = status.next
+        page_num += 1
+    elif status.status == "completed":
+        print(f"\nCrawl completed! Total results: {len(all_results)}")
+        break
+    else:
+        # Still processing, wait and retry
+        print(f"Status: {status.status}, waiting...")
+        time.sleep(5)
+        next_url = None  # Retry from first page
+
+# Process all results
+for doc in all_results:
+    print(f"- {doc.metadata.get('title')}: {doc.metadata.get('sourceURL')}")
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// Start the crawl
+const crawlJob = await app.startCrawl({
+  url: 'https://docs.firecrawl.dev',
+  limit: 200
+});
+console.log(`Crawl started: ${crawlJob.id}`);
+
+const allResults = [];
+let nextUrl = null;
+let pageNum = 1;
+
+// Wait for crawl to complete or have results
+while (true) {
+  let status;
+  
+  if (nextUrl) {
+    // Fetch next page using the next URL
+    status = await app.getCrawlStatusPage(nextUrl);
+  } else {
+    // Fetch first page
+    status = await app.getCrawlStatus(crawlJob.id, {
+      autoPaginate: false
+    });
+  }
+  
+  console.log(`\nPage ${pageNum}: ${status.data.length} results`);
+  console.log(`Overall progress: ${status.completed}/${status.total}`);
+  
+  // Collect results from this page
+  allResults.push(...status.data);
+  
+  // Check if there are more pages
+  if (status.next) {
+    nextUrl = status.next;
+    pageNum++;
+  } else if (status.status === 'completed') {
+    console.log(`\nCrawl completed! Total results: ${allResults.length}`);
+    break;
+  } else {
+    // Still processing, wait and retry
+    console.log(`Status: ${status.status}, waiting...`);
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    nextUrl = null;  // Retry from first page
+  }
+}
+
+// Process all results
+allResults.forEach(doc => {
+  console.log(`- ${doc.metadata.title}: ${doc.metadata.sourceURL}`);
+});
+```
+</CodeGroup>
+
+## Response Structure
+
+When using manual pagination, status responses include:
+
+```json
+{
+  "status": "scraping",
+  "total": 100,
+  "completed": 45,
+  "creditsUsed": 45,
+  "data": [
+    {
+      "markdown": "# Page Title\n\nContent...",
+      "metadata": {
+        "title": "Page Title",
+        "sourceURL": "https://example.com/page1"
+      }
+    }
+    // ... more results
+  ],
+  "next": "https://api.firecrawl.dev/v2/crawl/123-456-789?page=eyJhbGciOiJI..."
+}
+```
+
+Fields:
+- `status`: Current job status (`scraping`, `completed`, `failed`)
+- `total`: Total number of pages to scrape
+- `completed`: Number of pages completed so far
+- `creditsUsed`: Credits consumed
+- `data`: Array of scraped documents in this page
+- `next`: Opaque URL for the next page (only present if more data exists)
+
+## Best Practices
+
+<Tip>
+**Check both `next` and `status`**: A page may have no `next` URL because the job is still in progress. Check `status` to know if you should poll again.
+</Tip>
+
+<Tip>
+**Store the next URL**: If you need to pause processing, save the `next` URL to resume from that point later.
+</Tip>
+
+<Tip>
+**Handle rate limits**: When manually paginating, implement appropriate delays between requests to avoid rate limiting.
+</Tip>
+
+<Warning>
+The `next` URL is temporary and may expire. Don't store it for long-term use. If it expires, restart pagination from the job ID.
+</Warning>
+
+## Auto-Pagination (Default Behavior)
+
+By default, the SDKs automatically fetch all pages for you:
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# Auto-pagination enabled by default
+crawl_job = app.start_crawl("https://firecrawl.dev", limit=100)
+
+# This will automatically fetch all pages and poll until completion
+status = app.get_crawl_status(crawl_job.id)
+
+# All results are in status.data
+print(f"Total results: {len(status.data)}")
+for doc in status.data:
+    print(f"- {doc.metadata.get('sourceURL')}")
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// Auto-pagination enabled by default
+const crawlJob = await app.startCrawl({
+  url: 'https://firecrawl.dev',
+  limit: 100
+});
+
+// This will automatically fetch all pages and poll until completion
+const status = await app.getCrawlStatus(crawlJob.id);
+
+// All results are in status.data
+console.log(`Total results: ${status.data.length}`);
+status.data.forEach(doc => {
+  console.log(`- ${doc.metadata.sourceURL}`);
+});
+```
+</CodeGroup>
+
+<Tip>
+For most use cases, auto-pagination is recommended as it simplifies your code. Use manual pagination only when you need fine-grained control over the fetching process.
+</Tip>

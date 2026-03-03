@@ -1,0 +1,281 @@
+---
+title: "Self-Hosting Setup"
+description: "Step-by-step guide to installing and running a self-hosted Firecrawl instance"
+---
+
+This guide will walk you through setting up Firecrawl to run on your own infrastructure.
+
+## Prerequisites
+
+Before you begin, make sure you have Docker installed:
+
+- Docker ([installation instructions](https://docs.docker.com/get-docker/))
+
+<Note>
+If you encounter an error during setup, make sure you're using `docker compose` (with a space) and not the legacy `docker-compose` command.
+</Note>
+
+## Quick Start with Docker Compose
+
+The easiest way to run Firecrawl is using Docker Compose, which automatically sets up all required services.
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/firecrawl/firecrawl.git
+    cd firecrawl
+    ```
+  </Step>
+
+  <Step title="Create environment file">
+    Create a `.env` file in the root directory with the following configuration:
+
+    ```bash
+    # ===== Required ENVS ======
+    PORT=3002
+    HOST=0.0.0.0
+
+    # Note: PORT is used by both the main API server and worker liveness check endpoint
+
+    # To turn on DB authentication, you need to set up Supabase.
+    USE_DB_AUTHENTICATION=false
+
+    # ===== Optional ENVS ======
+
+    ## === AI features (JSON format on scrape, /extract API) ===
+    # Provide your OpenAI API key here to enable AI features
+    # OPENAI_API_KEY=
+
+    # Experimental: Use Ollama
+    # OLLAMA_BASE_URL=http://localhost:11434/api
+    # MODEL_NAME=deepseek-r1:7b
+    # MODEL_EMBEDDING_NAME=nomic-embed-text
+
+    # Experimental: Use any OpenAI-compatible API
+    # OPENAI_BASE_URL=https://example.com/v1
+    # OPENAI_API_KEY=
+
+    ## === Proxy ===
+    # PROXY_SERVER can be a full URL (e.g. http://0.1.2.3:1234) or just an IP and port combo (e.g. 0.1.2.3:1234)
+    # Do not uncomment PROXY_USERNAME and PROXY_PASSWORD if your proxy is unauthenticated
+    # PROXY_SERVER=
+    # PROXY_USERNAME=
+    # PROXY_PASSWORD=
+
+    ## === /search API ===
+    # By default, the /search API will use Google search.
+
+    # You can specify a SearXNG server with the JSON format enabled, if you'd like to use that instead of direct Google.
+    # You can also customize the engines and categories parameters, but the defaults should also work just fine.
+    # SEARXNG_ENDPOINT=http://your.searxng.server
+    # SEARXNG_ENGINES=
+    # SEARXNG_CATEGORIES=
+
+    ## === Other ===
+
+    # Supabase Setup (used to support DB authentication, advanced logging, etc.)
+    # SUPABASE_ANON_TOKEN=
+    # SUPABASE_URL=
+    # SUPABASE_SERVICE_TOKEN=
+
+    # Use if you've set up authentication and want to test with a real API key
+    # TEST_API_KEY=
+
+    # This key lets you access the queue admin panel. Change this if your deployment is publicly accessible.
+    BULL_AUTH_KEY=CHANGEME
+
+    # This is now autoconfigured by the docker-compose.yaml. You shouldn't need to set it.
+    # PLAYWRIGHT_MICROSERVICE_URL=http://playwright-service:3000/scrape
+    # REDIS_URL=redis://redis:6379
+    # REDIS_RATE_LIMIT_URL=redis://redis:6379
+
+    ## === PostgreSQL Database Configuration ===
+    # Configure PostgreSQL credentials. These should match the credentials used by the nuq-postgres container.
+    # If you change these, ensure all three are set consistently.
+    # POSTGRES_USER=firecrawl
+    # POSTGRES_PASSWORD=firecrawl_password
+    # POSTGRES_DB=firecrawl
+
+    # Set if you have a llamaparse key you'd like to use to parse pdfs
+    # LLAMAPARSE_API_KEY=
+
+    # Set if you'd like to send server health status messages to Slack
+    # SLACK_WEBHOOK_URL=
+
+    ## === System Resource Configuration ===
+    # Maximum CPU usage threshold (0.0-1.0). Worker will reject new jobs when CPU usage exceeds this value.
+    # Default: 0.8 (80%)
+    # MAX_CPU=0.8
+
+    # Maximum RAM usage threshold (0.0-1.0). Worker will reject new jobs when memory usage exceeds this value.
+    # Default: 0.8 (80%)
+    # MAX_RAM=0.8
+
+    # Set if you'd like to allow local webhooks to be sent to your self-hosted instance
+    # ALLOW_LOCAL_WEBHOOKS=true
+    ```
+  </Step>
+
+  <Step title="Build and start the services">
+    <Warning>
+    Make sure Docker is running before executing these commands.
+    </Warning>
+
+    ```bash
+    docker compose build
+    docker compose up
+    ```
+
+    This will start:
+    - **Redis:** Job queue and rate limiting
+    - **RabbitMQ:** Message broker for job coordination
+    - **PostgreSQL:** Database for queuing and job management
+    - **Playwright service:** JavaScript rendering and browser automation
+    - **API server:** Main API endpoint and workers
+  </Step>
+
+  <Step title="Verify the installation">
+    Once all services are running, Firecrawl should be accessible at:
+    - **API:** `http://localhost:3002`
+    - **Queue Manager UI:** `http://localhost:3002/admin/CHANGEME/queues`
+
+    <Note>
+    Replace `CHANGEME` in the Queue Manager URL with the value you set for `BULL_AUTH_KEY` in your `.env` file.
+    </Note>
+  </Step>
+
+  <Step title="Test the API">
+    Test the crawl endpoint with a simple curl request:
+
+    ```bash
+    curl -X POST http://localhost:3002/v1/crawl \
+        -H 'Content-Type: application/json' \
+        -d '{
+          "url": "https://firecrawl.dev"
+        }'
+    ```
+
+    You should receive a JSON response with a job ID that you can use to check the crawl status.
+  </Step>
+</Steps>
+
+## Local Development Setup
+
+If you want to contribute to Firecrawl or run it without Docker, follow these steps:
+
+### Prerequisites
+
+1. Node.js ([installation instructions](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs))
+2. Rust ([installation instructions](https://www.rust-lang.org/tools/install))
+3. pnpm ([installation instructions](https://pnpm.io/installation))
+4. Redis ([installation instructions](https://redis.io/docs/latest/operate/oss_and_stack/install/install-redis/))
+5. PostgreSQL
+6. Docker (optional, for running PostgreSQL)
+
+### Database Setup
+
+You need to set up the PostgreSQL database by running the SQL file at `apps/nuq-postgres/nuq.sql`. The easiest way is to use the Docker image:
+
+```bash
+# Build the PostgreSQL image
+cd apps/nuq-postgres
+docker build -t nuq-postgres .
+
+# Run the container
+docker run --name nuqdb \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5433:5432 \
+  -v nuq-data:/var/lib/postgresql/data \
+  -d nuq-postgres
+```
+
+### Environment Configuration
+
+Create a `.env` file in the `/apps/api/` directory:
+
+```bash
+# ===== Required ENVS ======
+NUM_WORKERS_PER_QUEUE=8
+PORT=3002
+HOST=0.0.0.0
+REDIS_URL=redis://localhost:6379
+REDIS_RATE_LIMIT_URL=redis://localhost:6379
+
+## To turn on DB authentication, you need to set up supabase.
+USE_DB_AUTHENTICATION=false
+
+## Using the PostgreSQL for queuing -- change if credentials, host, or DB is different
+NUQ_DATABASE_URL=postgres://postgres:postgres@localhost:5433/postgres
+
+# ===== Optional ENVS ======
+
+# Supabase Setup (used to support DB authentication, advanced logging, etc.)
+SUPABASE_ANON_TOKEN=
+SUPABASE_URL=
+SUPABASE_SERVICE_TOKEN=
+
+# Other Optionals
+TEST_API_KEY= # use if you've set up authentication and want to test with a real API key
+OPENAI_API_KEY= # add for LLM dependent features (image alt generation, etc.)
+BULL_AUTH_KEY=
+PLAYWRIGHT_MICROSERVICE_URL=  # set if you'd like to run a playwright fallback
+LLAMAPARSE_API_KEY= # Set if you have a llamaparse key you'd like to use to parse pdfs
+SLACK_WEBHOOK_URL= # set if you'd like to send slack server health status messages
+```
+
+### Installing Dependencies
+
+```bash
+cd apps/api
+pnpm install  # make sure you have pnpm version 9+!
+```
+
+### Running the Services
+
+You'll need to open 3 terminals:
+
+**Terminal 1 - Redis:**
+```bash
+redis-server
+```
+
+**Terminal 2 - API Server and Workers:**
+```bash
+cd apps/api
+pnpm start
+```
+
+**Terminal 3 - Test the API:**
+```bash
+curl -X GET http://localhost:3002/test
+```
+
+This should return "Hello, world!"
+
+## Kubernetes Deployment
+
+For production deployments, you can use Kubernetes:
+
+- **Simple cluster install:** See [examples/kubernetes/cluster-install/README.md](https://github.com/firecrawl/firecrawl/blob/main/examples/kubernetes/cluster-install/README.md)
+- **Helm chart:** See [examples/kubernetes/firecrawl-helm/README.md](https://github.com/firecrawl/firecrawl/blob/main/examples/kubernetes/firecrawl-helm/README.md)
+
+## Security Considerations
+
+<Warning>
+**Critical Security Steps:**
+
+- **Use strong PostgreSQL credentials:** The defaults in the `.env` template are for local development only. When deploying to a server, set `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB` to secure values and ensure they match the database service configuration.
+- **Keep the database port internal:** The provided `docker-compose.yaml` does not expose PostgreSQL to the host or the internet. Avoid adding a `ports` mapping for `nuq-postgres` unless you are restricting access with a firewall.
+- **Protect the admin UI:** Set `BULL_AUTH_KEY` to a strong secret, especially on any deployment reachable from untrusted networks.
+</Warning>
+
+To access the database for maintenance, prefer using:
+```bash
+docker compose exec nuq-postgres psql
+```
+
+Or create a temporary, firewalled tunnel instead of exposing the port directly.
+
+## Next Steps
+
+Once your Firecrawl instance is running, check out the [Configuration](/self-hosting/configuration) page to learn about customizing your deployment.

@@ -1,0 +1,346 @@
+---
+title: Authentication
+description: Learn how to authenticate with the Firecrawl API using API keys and manage your credentials securely
+---
+
+# Authentication
+
+The Firecrawl API uses API keys to authenticate requests. All API requests must include your API key in the Authorization header.
+
+## Getting Your API Key
+
+<Steps>
+  <Step title="Create an Account">
+    Sign up for a free account at [firecrawl.dev](https://firecrawl.dev).
+  </Step>
+  
+  <Step title="Access Your Dashboard">
+    After signing up, log in to your dashboard.
+  </Step>
+  
+  <Step title="Generate an API Key">
+    Navigate to the API Keys section in your dashboard and click "Create New API Key".
+  </Step>
+  
+  <Step title="Copy and Store Securely">
+    Copy your API key immediately. It will start with `fc-` followed by a unique string.
+  </Step>
+</Steps>
+
+<Warning>
+**Keep your API key secure!** Your API key carries many privileges, so be sure to keep it secure. Do not share your secret API key in publicly accessible areas such as GitHub, client-side code, or any other public forums.
+</Warning>
+
+## Using Your API Key
+
+All API requests must include your API key in the `Authorization` header as a Bearer token:
+
+```bash
+Authorization: Bearer fc-YOUR_API_KEY
+```
+
+### REST API
+
+Include the Authorization header in all API requests:
+
+```bash
+curl -X POST 'https://api.firecrawl.dev/v2/scrape' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"url": "https://example.com"}'
+```
+
+### Python SDK
+
+You can pass your API key directly to the SDK or use an environment variable:
+
+<CodeGroup>
+```python Direct
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+doc = app.scrape("https://firecrawl.dev", formats=["markdown"])
+```
+
+```python Environment Variable
+import os
+from firecrawl import Firecrawl
+
+# Set the environment variable
+os.environ["FIRECRAWL_API_KEY"] = "fc-YOUR_API_KEY"
+
+# Or load from .env file
+app = Firecrawl()  # Automatically uses FIRECRAWL_API_KEY
+
+doc = app.scrape("https://firecrawl.dev", formats=["markdown"])
+```
+</CodeGroup>
+
+### JavaScript/Node.js SDK
+
+Similar to Python, you can pass the API key directly or use an environment variable:
+
+<CodeGroup>
+```javascript Direct
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc = await app.scrape('https://firecrawl.dev', { formats: ['markdown'] });
+```
+
+```javascript Environment Variable
+import Firecrawl from '@mendable/firecrawl-js';
+
+// Set the environment variable
+process.env.FIRECRAWL_API_KEY = 'fc-YOUR_API_KEY';
+
+// Or use dotenv to load from .env file
+const app = new Firecrawl();  // Automatically uses FIRECRAWL_API_KEY
+
+const doc = await app.scrape('https://firecrawl.dev', { formats: ['markdown'] });
+```
+</CodeGroup>
+
+## Environment Variables
+
+It's recommended to store your API key in environment variables rather than hardcoding it in your application:
+
+<Tabs>
+  <Tab title=".env File">
+    Create a `.env` file in your project root:
+    
+    ```bash
+    FIRECRAWL_API_KEY=fc-YOUR_API_KEY
+    ```
+    
+    **Python**: Use `python-dotenv` to load environment variables:
+    
+    ```python
+    from dotenv import load_dotenv
+    from firecrawl import Firecrawl
+    
+    load_dotenv()
+    app = Firecrawl()  # Automatically uses FIRECRAWL_API_KEY from .env
+    ```
+    
+    **JavaScript**: Use `dotenv` package:
+    
+    ```javascript
+    import 'dotenv/config';
+    import Firecrawl from '@mendable/firecrawl-js';
+    
+    const app = new Firecrawl();  // Automatically uses FIRECRAWL_API_KEY from .env
+    ```
+    
+    <Warning>
+    Add `.env` to your `.gitignore` file to prevent committing your API key to version control:
+    
+    ```bash
+    # .gitignore
+    .env
+    ```
+    </Warning>
+  </Tab>
+  
+  <Tab title="System Environment">
+    Set the environment variable in your shell:
+    
+    **Linux/macOS**:
+    ```bash
+    export FIRECRAWL_API_KEY=fc-YOUR_API_KEY
+    ```
+    
+    **Windows (Command Prompt)**:
+    ```cmd
+    set FIRECRAWL_API_KEY=fc-YOUR_API_KEY
+    ```
+    
+    **Windows (PowerShell)**:
+    ```powershell
+    $env:FIRECRAWL_API_KEY="fc-YOUR_API_KEY"
+    ```
+  </Tab>
+  
+  <Tab title="Docker">
+    Pass environment variables when running Docker containers:
+    
+    ```bash
+    docker run -e FIRECRAWL_API_KEY=fc-YOUR_API_KEY your-app
+    ```
+    
+    Or use Docker Compose:
+    
+    ```yaml
+    version: '3'
+    services:
+      app:
+        image: your-app
+        environment:
+          - FIRECRAWL_API_KEY=fc-YOUR_API_KEY
+    ```
+  </Tab>
+  
+  <Tab title="CI/CD">
+    For GitHub Actions, set secrets in your repository settings and reference them:
+    
+    ```yaml
+    - name: Run tests
+      env:
+        FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+      run: npm test
+    ```
+    
+    For other CI/CD platforms, consult their documentation on managing secrets.
+  </Tab>
+</Tabs>
+
+## API Key Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Never Hardcode" icon="code">
+    Don't hardcode API keys in your source code. Always use environment variables or secret management systems.
+  </Card>
+  
+  <Card title="Rotate Regularly" icon="rotate">
+    Regularly rotate your API keys, especially if you suspect they may have been compromised.
+  </Card>
+  
+  <Card title="Use Different Keys" icon="layer-group">
+    Use different API keys for development, staging, and production environments.
+  </Card>
+  
+  <Card title="Monitor Usage" icon="chart-line">
+    Monitor your API usage in the dashboard to detect any unusual activity.
+  </Card>
+</CardGroup>
+
+## Rate Limits
+
+API keys are subject to rate limits based on your plan. The current rate limit information is included in the response headers:
+
+```bash
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1640995200
+```
+
+<Note>
+If you exceed your rate limit, you'll receive a `429 Too Many Requests` response. The `X-RateLimit-Reset` header indicates when your rate limit will reset (as a Unix timestamp).
+</Note>
+
+## Checking Credit Usage
+
+You can check your remaining credits using the API:
+
+<CodeGroup>
+```bash cURL
+curl -X GET 'https://api.firecrawl.dev/v1/team/credit-usage' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY'
+```
+
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# Check remaining credits
+credits = app.get_credit_usage()
+print(f"Remaining credits: {credits}")
+```
+
+```javascript JavaScript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// Check remaining credits
+const credits = await app.getCreditUsage();
+console.log(`Remaining credits: ${credits}`);
+```
+</CodeGroup>
+
+## Troubleshooting
+
+### Invalid API Key
+
+If you receive a `401 Unauthorized` error, check that:
+
+1. Your API key is correct and starts with `fc-`
+2. The API key is included in the `Authorization` header as `Bearer fc-YOUR_API_KEY`
+3. Your API key hasn't been revoked or expired
+
+### Missing Authorization Header
+
+If you receive an error about a missing authorization header:
+
+```json
+{
+  "error": "Missing Authorization header"
+}
+```
+
+Ensure you're including the `Authorization` header in your request:
+
+```bash
+-H 'Authorization: Bearer fc-YOUR_API_KEY'
+```
+
+### Payment Required
+
+If you receive a `402 Payment Required` error, you've exhausted your credits. Upgrade your plan or purchase additional credits in the dashboard.
+
+## Managing Multiple API Keys
+
+You can create multiple API keys for different purposes:
+
+- **Development**: For local development and testing
+- **Staging**: For pre-production environments
+- **Production**: For live applications
+- **CI/CD**: For automated testing and deployments
+
+To create additional API keys, go to your dashboard and click "Create New API Key". You can name each key and revoke them individually if needed.
+
+## Revoking API Keys
+
+If an API key is compromised or no longer needed:
+
+<Steps>
+  <Step title="Go to Dashboard">
+    Navigate to the API Keys section in your dashboard.
+  </Step>
+  
+  <Step title="Find the Key">
+    Locate the API key you want to revoke.
+  </Step>
+  
+  <Step title="Revoke">
+    Click the "Revoke" button next to the key.
+  </Step>
+  
+  <Step title="Confirm">
+    Confirm the revocation. This action cannot be undone.
+  </Step>
+</Steps>
+
+<Warning>
+Revoking an API key immediately invalidates it. Any applications using that key will stop working until you update them with a new key.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Start making API requests with your new API key
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Explore all available endpoints
+  </Card>
+  <Card title="SDKs" icon="book" href="/sdks/overview">
+    Learn more about our official SDKs
+  </Card>
+  <Card title="Pricing" icon="credit-card" href="https://firecrawl.dev/pricing">
+    View plans and pricing
+  </Card>
+</CardGroup>

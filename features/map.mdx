@@ -1,0 +1,317 @@
+---
+title: Map
+description: Discover all URLs on a website instantly without scraping
+---
+
+The Map feature allows you to quickly discover all URLs on a website without scraping the content. It's the fastest way to get a complete list of pages, making it ideal for planning crawls or understanding website structure.
+
+## When to Use Map
+
+Use Map when you need to:
+- Discover all URLs on a website before crawling
+- Understand website structure and navigation
+- Find specific pages using search
+- Build a sitemap or URL inventory
+- Plan a targeted crawl with specific URLs
+
+## Basic Usage
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    from firecrawl import Firecrawl
+
+    app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+    # Map a website
+    result = app.map('https://firecrawl.dev')
+
+    for link in result.links:
+        print(f"{link.url} - {link.title}")
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    import Firecrawl from '@mendable/firecrawl-js';
+
+    const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+    // Map a website
+    const result = await app.map('https://firecrawl.dev');
+
+    result.links.forEach(link => {
+      console.log(`${link.url} - ${link.title}`);
+    });
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST 'https://api.firecrawl.dev/v2/map' \
+      -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+      -H 'Content-Type: application/json' \
+      -d '{"url": "https://firecrawl.dev"}'
+    ```
+  </Tab>
+</Tabs>
+
+### Response
+
+```json
+{
+  "success": true,
+  "links": [
+    {
+      "url": "https://firecrawl.dev",
+      "title": "Firecrawl",
+      "description": "Turn websites into LLM-ready data"
+    },
+    {
+      "url": "https://firecrawl.dev/pricing",
+      "title": "Pricing",
+      "description": "Firecrawl pricing plans"
+    },
+    {
+      "url": "https://firecrawl.dev/blog",
+      "title": "Blog",
+      "description": "Firecrawl blog"
+    }
+  ]
+}
+```
+
+## Map with Search
+
+Find specific URLs within a site using search. Results are ordered by relevance:
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    result = app.map("https://firecrawl.dev", search="pricing")
+    
+    # URLs are ordered by relevance to "pricing"
+    for link in result.links:
+        print(link.url)
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const result = await app.map('https://firecrawl.dev', {
+      search: 'pricing',
+    });
+
+    // URLs are ordered by relevance to "pricing"
+    result.links.forEach(link => {
+      console.log(link.url);
+    });
+    ```
+  </Tab>
+  <Tab title="cURL">
+    ```bash
+    curl -X POST 'https://api.firecrawl.dev/v2/map' \
+      -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "url": "https://firecrawl.dev",
+        "search": "pricing"
+      }'
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+During the Alpha phase, the 'smart' search functionality is limited to 1000 results. However, if Map finds more results, there is no limit applied.
+</Note>
+
+## Map Options
+
+### Limit Results
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    result = app.map(
+        "https://firecrawl.dev",
+        limit=100  # Return up to 100 links
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const result = await app.map('https://firecrawl.dev', {
+      limit: 100,  // Return up to 100 links
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Include Subdomains
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    result = app.map(
+        "https://firecrawl.dev",
+        include_subdomains=True  # Include docs.firecrawl.dev, etc.
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const result = await app.map('https://firecrawl.dev', {
+      includeSubdomains: true,  // Include docs.firecrawl.dev, etc.
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Ignore Sitemap
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    result = app.map(
+        "https://firecrawl.dev",
+        ignore_sitemap=True  # Don't use sitemap.xml
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const result = await app.map('https://firecrawl.dev', {
+      ignoreSitemap: true,  // Don't use sitemap.xml
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Sitemap Only
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    result = app.map(
+        "https://firecrawl.dev",
+        sitemap_only=True  # Only return links from sitemap.xml
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const result = await app.map('https://firecrawl.dev', {
+      sitemapOnly: true,  // Only return links from sitemap.xml
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Set Timeout
+
+<Tabs>
+  <Tab title="Python">
+    ```python
+    result = app.map(
+        "https://firecrawl.dev",
+        timeout=60000  # 60 second timeout in milliseconds
+    )
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```javascript
+    const result = await app.map('https://firecrawl.dev', {
+      timeout: 60000,  // 60 second timeout in milliseconds
+    });
+    ```
+  </Tab>
+</Tabs>
+
+## Use Cases
+
+### Plan a Targeted Crawl
+
+<Steps>
+  <Step title="Map the website">
+    ```python
+    # First, map the site to discover all URLs
+    map_result = app.map("https://docs.firecrawl.dev")
+    print(f"Found {len(map_result.links)} URLs")
+    ```
+  </Step>
+  <Step title="Filter URLs">
+    ```python
+    # Filter to only API reference pages
+    api_urls = [
+        link.url for link in map_result.links
+        if '/api-reference/' in link.url
+    ]
+    print(f"Found {len(api_urls)} API pages")
+    ```
+  </Step>
+  <Step title="Crawl specific URLs">
+    ```python
+    # Now crawl only those specific pages
+    from firecrawl.types import ScrapeOptions
+    
+    result = app.crawl(
+        'https://docs.firecrawl.dev',
+        include_paths=['api-reference/.*'],
+        scrape_options=ScrapeOptions(formats=['markdown'])
+    )
+    ```
+  </Step>
+</Steps>
+
+### Find Specific Content
+
+```python
+# Search for documentation about authentication
+result = app.map(
+    "https://docs.firecrawl.dev",
+    search="authentication"
+)
+
+# Results are ordered by relevance
+for link in result.links[:5]:  # Top 5 most relevant
+    print(f"{link.title}: {link.url}")
+```
+
+### Build a Sitemap
+
+```python
+# Get all URLs for sitemap generation
+result = app.map(
+    "https://yoursite.com",
+    limit=5000,
+    include_subdomains=False
+)
+
+# Generate XML sitemap
+with open('sitemap.xml', 'w') as f:
+    f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+    f.write('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n')
+    for link in result.links:
+        f.write(f'  <url><loc>{link.url}</loc></url>\n')
+    f.write('</urlset>')
+```
+
+## Best Practices
+
+<Tip>
+- Use Map before Crawl to understand the site structure and estimate costs
+- Use the `search` parameter to find specific pages quickly
+- Set appropriate `limit` values to avoid overwhelming results
+- Enable `includeSubdomains` only if you need cross-subdomain mapping
+- Use `sitemapOnly` for websites with well-maintained sitemaps for faster results
+- Map is much faster and cheaper than crawling - use it for discovery
+</Tip>
+
+## Limits
+
+- Default limit: 5,000 links
+- Maximum limit: 30,000 links
+- No timeout by default (configurable)
+
+## Next Steps
+
+- Use discovered URLs with [Batch Scrape](/features/batch-scrape) for parallel scraping
+- Combine with [Crawl](/features/crawl) for comprehensive site extraction
+- Try [Search](/features/search) to find content across the web

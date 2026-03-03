@@ -1,0 +1,171 @@
+---
+title: 'Map URLs'
+description: 'Discover all URLs on a website instantly'
+---
+
+## POST /v1/map
+
+Map a website to discover all its URLs. This endpoint returns a list of all URLs found on the website, optionally filtered by a search query.
+
+### Authentication
+
+Requires Bearer token authentication. Include your API key in the Authorization header:
+
+```
+Authorization: Bearer fc-YOUR_API_KEY
+```
+
+## Request Body
+
+<ParamField path="url" type="string" required>
+  The base URL to start crawling from
+</ParamField>
+
+<ParamField path="search" type="string">
+  Search query to use for mapping. During the Alpha phase, the 'smart' part of the search functionality is limited to 1000 search results. However, if map finds more results, there is no limit applied.
+</ParamField>
+
+<ParamField path="ignoreSitemap" type="boolean" default="true">
+  Ignore the website sitemap when crawling
+</ParamField>
+
+<ParamField path="sitemapOnly" type="boolean" default="false">
+  Only return links found in the website sitemap
+</ParamField>
+
+<ParamField path="includeSubdomains" type="boolean" default="true">
+  Include subdomains of the website
+</ParamField>
+
+<ParamField path="limit" type="integer" default="5000">
+  Maximum number of links to return. Maximum value is 30000.
+</ParamField>
+
+<ParamField path="timeout" type="integer">
+  Timeout in milliseconds. There is no timeout by default.
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the request was successful
+</ResponseField>
+
+<ResponseField name="links" type="array">
+  Array of URLs discovered on the website
+</ResponseField>
+
+## Examples
+
+### Basic Map Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v1/map' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"url": "https://firecrawl.dev"}'
+```
+
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+result = app.map("https://firecrawl.dev")
+print(result.links)
+```
+
+```javascript JavaScript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const result = await app.map('https://firecrawl.dev');
+console.log(result.links);
+```
+
+</CodeGroup>
+
+### Response
+
+```json
+{
+  "success": true,
+  "links": [
+    "https://firecrawl.dev",
+    "https://firecrawl.dev/pricing",
+    "https://firecrawl.dev/blog",
+    "https://firecrawl.dev/playground"
+  ]
+}
+```
+
+### Map with Search
+
+Find specific URLs within a site using a search query:
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v1/map' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://firecrawl.dev",
+    "search": "pricing"
+  }'
+```
+
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+result = app.map("https://firecrawl.dev", search="pricing")
+print(result.links)  # Returns URLs ordered by relevance to "pricing"
+```
+
+```javascript JavaScript
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const result = await app.map('https://firecrawl.dev', { search: 'pricing' });
+console.log(result.links);  // Returns URLs ordered by relevance to "pricing"
+```
+
+</CodeGroup>
+
+## Error Responses
+
+<ResponseField name="402" type="object">
+  **Payment Required** - Payment required to access this resource
+  
+  ```json
+  {
+    "error": "Payment required to access this resource."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="429" type="object">
+  **Too Many Requests** - Request rate limit exceeded
+  
+  ```json
+  {
+    "error": "Request rate limit exceeded. Please wait and try again later."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  **Server Error** - An unexpected error occurred on the server
+  
+  ```json
+  {
+    "error": "An unexpected error occurred on the server."
+  }
+  ```
+</ResponseField>

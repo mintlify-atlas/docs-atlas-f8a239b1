@@ -1,0 +1,163 @@
+---
+title: 'Get batch scrape errors'
+description: 'Get the errors of a batch scrape job'
+---
+
+## Endpoint
+
+<CodeGroup>
+```http
+GET /v1/batch/scrape/{id}/errors
+```
+</CodeGroup>
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token. Include your API key in the Authorization header:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the batch scrape job (UUID format)
+</ParamField>
+
+## Response
+
+<ResponseField name="errors" type="array">
+  Errored scrape jobs and error details
+  <Expandable title="items">
+    <ResponseField name="id" type="string">
+      The unique identifier of the failed scrape job
+    </ResponseField>
+    <ResponseField name="timestamp" type="string">
+      ISO timestamp of failure
+    </ResponseField>
+    <ResponseField name="url" type="string">
+      The URL that was being scraped
+    </ResponseField>
+    <ResponseField name="error" type="string">
+      Error message describing what went wrong
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="robotsBlocked" type="array">
+  List of URLs that were attempted in scraping but were blocked by robots.txt
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+```bash cURL
+curl -X GET https://api.firecrawl.dev/v1/batch/scrape/550e8400-e29b-41d4-a716-446655440000/errors \
+  -H 'Authorization: Bearer YOUR_API_KEY'
+```
+
+```python Python
+from firecrawl import FirecrawlApp
+
+app = FirecrawlApp(api_key='YOUR_API_KEY')
+
+job_id = '550e8400-e29b-41d4-a716-446655440000'
+errors = app.get_batch_scrape_errors(job_id)
+
+print(f"Total errors: {len(errors['errors'])}")
+
+for error in errors['errors']:
+    print(f"URL: {error['url']}")
+    print(f"Error: {error['error']}")
+    print(f"Timestamp: {error['timestamp']}")
+    print("---")
+
+if errors['robotsBlocked']:
+    print(f"URLs blocked by robots.txt: {len(errors['robotsBlocked'])}")
+    for url in errors['robotsBlocked']:
+        print(f"  - {url}")
+```
+
+```javascript JavaScript
+import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({ apiKey: 'YOUR_API_KEY' });
+
+const jobId = '550e8400-e29b-41d4-a716-446655440000';
+const errors = await app.getBatchScrapeErrors(jobId);
+
+console.log(`Total errors: ${errors.errors.length}`);
+
+errors.errors.forEach(error => {
+  console.log(`URL: ${error.url}`);
+  console.log(`Error: ${error.error}`);
+  console.log(`Timestamp: ${error.timestamp}`);
+  console.log('---');
+});
+
+if (errors.robotsBlocked?.length > 0) {
+  console.log(`URLs blocked by robots.txt: ${errors.robotsBlocked.length}`);
+  errors.robotsBlocked.forEach(url => {
+    console.log(`  - ${url}`);
+  });
+}
+```
+</CodeGroup>
+
+## Response Example
+
+```json
+{
+  "errors": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "timestamp": "2024-01-15T10:30:00Z",
+      "url": "https://example.com/page1",
+      "error": "Request timeout after 30000ms"
+    },
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174001",
+      "timestamp": "2024-01-15T10:31:00Z",
+      "url": "https://example.com/page2",
+      "error": "Failed to fetch page content"
+    }
+  ],
+  "robotsBlocked": [
+    "https://example.com/admin",
+    "https://example.com/private"
+  ]
+}
+```
+
+## Error Responses
+
+<ResponseField name="402" type="object">
+  **Payment Required** - Payment required to access this resource.
+  
+  ```json
+  {
+    "error": "Payment required to access this resource."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="429" type="object">
+  **Too Many Requests** - Request rate limit exceeded.
+  
+  ```json
+  {
+    "error": "Request rate limit exceeded. Please wait and try again later."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  **Server Error** - An unexpected error occurred on the server.
+  
+  ```json
+  {
+    "error": "An unexpected error occurred on the server."
+  }
+  ```
+</ResponseField>

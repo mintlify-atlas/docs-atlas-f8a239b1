@@ -1,0 +1,110 @@
+---
+title: Introduction
+description: Turn websites into LLM-ready data with Firecrawl's powerful scraping, crawling, and extraction API
+---
+
+# Welcome to Firecrawl
+
+Firecrawl is an API that scrapes, crawls, and extracts structured data from any website, powering AI agents and apps with real-time context from the web.
+
+## Why Firecrawl?
+
+<CardGroup cols={2}>
+  <Card title="LLM-Ready Output" icon="robot" href="/features/scrape">
+    Clean markdown, structured JSON, screenshots, HTML, and more - perfectly formatted for AI applications
+  </Card>
+  <Card title="Industry-Leading Reliability" icon="shield-check">
+    >80% coverage on benchmark evaluations, outperforming every other provider tested
+  </Card>
+  <Card title="Handles Complex Sites" icon="globe" href="/features/scrape">
+    Proxies, JavaScript rendering, and dynamic content that breaks other scrapers
+  </Card>
+  <Card title="Advanced Customization" icon="sliders" href="/advanced/actions">
+    Exclude tags, crawl behind auth walls, control depth, actions, and more
+  </Card>
+  <Card title="Media Parsing" icon="file" href="/advanced/formats">
+    Automatic text extraction from PDFs, DOCX, and images
+  </Card>
+  <Card title="Batch Processing" icon="layer-group" href="/features/batch-scrape">
+    Scrape thousands of URLs asynchronously with change tracking over time
+  </Card>
+</CardGroup>
+
+## Core Features
+
+<CardGroup cols={2}>
+  <Card title="Scrape" icon="newspaper" href="/features/scrape">
+    Convert any URL to markdown, HTML, screenshots, or structured JSON
+  </Card>
+  <Card title="Crawl" icon="spider" href="/features/crawl">
+    Scrape all URLs of a website with a single request
+  </Card>
+  <Card title="Search" icon="magnifying-glass" href="/features/search">
+    Search the web and get full page content from results
+  </Card>
+  <Card title="Agent" icon="wand-magic-sparkles" href="/features/agent">
+    Automated data gathering - just describe what you need, no URLs required
+  </Card>
+  <Card title="Map" icon="sitemap" href="/features/map">
+    Discover all URLs on a website instantly
+  </Card>
+  <Card title="Extract" icon="database" href="/features/scrape">
+    Extract structured data using schemas with AI-powered extraction
+  </Card>
+</CardGroup>
+
+## Quick Example
+
+Get started in seconds with a simple API call:
+
+```bash
+curl -X POST 'https://api.firecrawl.dev/v2/scrape' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"url": "https://example.com"}'
+```
+
+<Note>
+Sign up at [firecrawl.dev](https://firecrawl.dev) to get your API key and start extracting data. Try the [playground](https://firecrawl.dev/playground) to test it out.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get up and running in 5 minutes with our quickstart guide
+  </Card>
+  <Card title="Authentication" icon="key" href="/authentication">
+    Learn how to get and use your API keys
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Explore the complete API documentation
+  </Card>
+  <Card title="SDKs" icon="book" href="/sdks/python">
+    Install our Python, Node.js, Go, or Rust SDKs
+  </Card>
+</CardGroup>
+
+## Use Cases
+
+Firecrawl powers a wide range of applications:
+
+- **AI Agents & RAG Systems** - Provide real-time web context to LLMs
+- **Lead Generation** - Extract company information and contact data at scale
+- **Market Research** - Monitor competitor pricing and product changes
+- **Content Aggregation** - Build knowledge bases from multiple sources
+- **SEO Analysis** - Analyze website structure and metadata
+- **Price Monitoring** - Track pricing changes across e-commerce sites
+
+## Open Source
+
+Firecrawl is open source under the AGPL-3.0 license. The cloud version at [firecrawl.dev](https://firecrawl.dev) includes additional features like enhanced reliability, priority support, and enterprise-grade infrastructure.
+
+<CardGroup cols={2}>
+  <Card title="GitHub Repository" icon="github" href="https://github.com/firecrawl/firecrawl">
+    Star us on GitHub and contribute to the project
+  </Card>
+  <Card title="Community" icon="discord" href="https://discord.com/invite/gSmWdAkdwd">
+    Join our Discord community for support and discussions
+  </Card>
+</CardGroup>

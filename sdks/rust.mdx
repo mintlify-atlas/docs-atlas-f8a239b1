@@ -1,0 +1,419 @@
+---
+title: Rust SDK
+description: Official Rust SDK for Firecrawl - scrape, crawl, and extract web data for AI applications
+---
+
+The Firecrawl Rust SDK provides a robust, type-safe interface for scraping, crawling, and extracting structured data from websites. It leverages Rust's async capabilities with Tokio and provides comprehensive error handling.
+
+## Installation
+
+Add to your `Cargo.toml`:
+
+```toml
+[dependencies]
+firecrawl = "^0.1"
+tokio = { version = "^1", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+```
+
+## Quick Start
+
+```rust
+use firecrawl::FirecrawlApp;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let app = FirecrawlApp::new("fc-YOUR_API_KEY")?;
+    
+    let document = app.scrape_url("https://firecrawl.dev", None).await?;
+    println!("Markdown: {}", document.markdown);
+    
+    Ok(())
+}
+```
+
+## Authentication
+
+Get your API key from [firecrawl.dev](https://firecrawl.dev) and initialize the client:
+
+```rust
+use firecrawl::FirecrawlApp;
+
+// For cloud API
+let app = FirecrawlApp::new("fc-YOUR_API_KEY")?;
+
+// For self-hosted
+let app = FirecrawlApp::new_selfhosted(
+    "http://localhost:3002",
+    Some("your-api-key")
+)?;
+```
+
+## Scraping
+
+### Basic Scrape
+
+Scrape a single URL:
+
+```rust
+use firecrawl::FirecrawlApp;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let app = FirecrawlApp::new("fc-YOUR_API_KEY")?;
+    
+    let result = app.scrape_url("https://firecrawl.dev", None).await?;
+    
+    println!("Title: {:?}", result.metadata.title);
+    println!("Markdown: {}", result.markdown);
+    
+    Ok(())
+}
+```
+
+### Scrape with Options
+
+```rust
+use firecrawl::{FirecrawlApp, scrape::ScrapeOptions, document::ScrapeFormats};
+
+let options = ScrapeOptions {
+    formats: vec![ScrapeFormats::Markdown, ScrapeFormats::Html].into(),
+    only_main_content: Some(true),
+    include_tags: Some(vec!["article".to_string(), "main".to_string()]),
+    exclude_tags: Some(vec!["nav".to_string(), "footer".to_string()]),
+    ..Default::default()
+};
+
+let result = app.scrape_url("https://firecrawl.dev", Some(options)).await?;
+```
+
+### Extract Structured Data
+
+Extract data using a JSON schema:
+
+```rust
+use firecrawl::{FirecrawlApp, scrape::ScrapeOptions, document::ScrapeFormats};
+use firecrawl::extract::ExtractOptions;
+use serde_json::json;
+
+let json_schema = json!({
+    "type": "object",
+    "properties": {
+        "top": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "points": {"type": "number"},
+                    "by": {"type": "string"},
+                    "commentsURL": {"type": "string"}
+                },
+                "required": ["title", "points", "by", "commentsURL"]
+            },
+            "minItems": 5,
+            "maxItems": 5,
+            "description": "Top 5 stories on Hacker News"
+        }
+    },
+    "required": ["top"]
+});
+
+let extraction_options = ScrapeOptions {
+    formats: vec![ScrapeFormats::Extract].into(),
+    extract: ExtractOptions {
+        schema: json_schema.into(),
+        ..Default::default()
+    }.into(),
+    ..Default::default()
+};
+
+let result = app.scrape_url(
+    "https://news.ycombinator.com",
+    Some(extraction_options)
+).await?;
+
+println!("Extracted data: {:#?}", result.extract.unwrap());
+```
+
+## Crawling
+
+### Basic Crawl (Auto-Wait)
+
+Crawl a website and wait for completion:
+
+```rust
+use firecrawl::{FirecrawlApp, crawl::CrawlOptions};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let app = FirecrawlApp::new("fc-YOUR_API_KEY")?;
+    
+    let options = CrawlOptions {
+        limit: Some(50),
+        exclude_paths: vec!["blog/*".into()].into(),
+        ..Default::default()
+    };
+    
+    let result = app.crawl_url("https://firecrawl.dev", Some(options)).await?;
+    
+    println!("Crawled {} pages", result.data.len());
+    println!("Credits used: {}", result.credits_used);
+    
+    for doc in result.data {
+        println!("URL: {:?}", doc.metadata.source_url);
+    }
+    
+    Ok(())
+}
+```
+
+### Async Crawl (Manual Polling)
+
+Start a crawl and check status manually:
+
+```rust
+use firecrawl::{FirecrawlApp, crawl::{CrawlOptions, CrawlStatusTypes}};
+use std::time::Duration;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let app = FirecrawlApp::new("fc-YOUR_API_KEY")?;
+    
+    // Start async crawl
+    let crawl_response = app.crawl_url_async(
+        "https://firecrawl.dev",
+        Some(CrawlOptions {
+            limit: Some(100),
+            ..Default::default()
+        })
+    ).await?;
+    
+    println!("Crawl started with ID: {}", crawl_response.id);
+    
+    // Poll for status
+    loop {
+        tokio::time::sleep(Duration::from_secs(2)).await;
+        
+        let status = app.check_crawl_status(&crawl_response.id).await?;
+        
+        println!("Status: {:?}, Completed: {}/{}",
+            status.status,
+            status.completed.unwrap_or(0),
+            status.total.unwrap_or(0)
+        );
+        
+        if status.status == CrawlStatusTypes::Completed {
+            println!("Crawl complete! Found {} documents", status.data.len());
+            break;
+        } else if status.status == CrawlStatusTypes::Failed {
+            println!("Crawl failed");
+            break;
+        }
+    }
+    
+    Ok(())
+}
+```
+
+### Cancel a Crawl
+
+```rust
+let cancel_result = app.cancel_crawl(&crawl_id).await?;
+println!("Crawl cancelled: {:?}", cancel_result);
+```
+
+## Map
+
+Discover all URLs on a website:
+
+```rust
+use firecrawl::FirecrawlApp;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let app = FirecrawlApp::new("fc-YOUR_API_KEY")?;
+    
+    let map_result = app.map_url("https://firecrawl.dev", None).await?;
+    
+    for link in map_result.links {
+        println!("URL: {}", link.url);
+    }
+    
+    Ok(())
+}
+```
+
+### Map with Options
+
+```rust
+use firecrawl::{FirecrawlApp, map::MapOptions};
+
+let options = MapOptions {
+    search: Some("pricing".to_string()),
+    limit: Some(100),
+    include_subdomains: Some(false),
+    ..Default::default()
+};
+
+let map_result = app.map_url("https://firecrawl.dev", Some(options)).await?;
+```
+
+## Search
+
+Search the web:
+
+```rust
+use firecrawl::{FirecrawlApp, search::SearchOptions};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let app = FirecrawlApp::new("fc-YOUR_API_KEY")?;
+    
+    let options = SearchOptions {
+        limit: Some(10),
+        ..Default::default()
+    };
+    
+    let results = app.search("firecrawl web scraping", Some(options)).await?;
+    
+    for result in results.data {
+        println!("Title: {}", result.title);
+        println!("URL: {}", result.url);
+    }
+    
+    Ok(())
+}
+```
+
+## Batch Scraping
+
+Scrape multiple URLs in parallel:
+
+```rust
+use firecrawl::{FirecrawlApp, batch_scrape::BatchScrapeOptions};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let app = FirecrawlApp::new("fc-YOUR_API_KEY")?;
+    
+    let urls = vec![
+        "https://firecrawl.dev".to_string(),
+        "https://docs.firecrawl.dev".to_string(),
+    ];
+    
+    let result = app.batch_scrape_urls(urls, None).await?;
+    
+    for doc in result.data {
+        println!("URL: {:?}", doc.metadata.source_url);
+        println!("Content: {}", &doc.markdown[..100.min(doc.markdown.len())]);
+    }
+    
+    Ok(())
+}
+```
+
+## Using v2 API
+
+The SDK also provides access to the v2 API:
+
+```rust
+use firecrawl::v2::Client;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::new("fc-YOUR_API_KEY")?;
+    
+    // Scrape with v2
+    let document = client.scrape("https://example.com", None).await?;
+    println!("Markdown: {:?}", document.markdown);
+    
+    // Crawl with v2
+    let crawl_result = client.crawl("https://example.com", None).await?;
+    
+    Ok(())
+}
+```
+
+## Error Handling
+
+The SDK uses the `FirecrawlError` enum for comprehensive error handling:
+
+```rust
+use firecrawl::{FirecrawlApp, FirecrawlError};
+
+#[tokio::main]
+async fn main() {
+    let app = FirecrawlApp::new("fc-YOUR_API_KEY").unwrap();
+    
+    match app.scrape_url("https://example.com", None).await {
+        Ok(document) => {
+            println!("Success: {}", document.markdown);
+        }
+        Err(FirecrawlError::APIError(action, error)) => {
+            eprintln!("API error in {}: {}", action, error.error);
+        }
+        Err(FirecrawlError::HttpRequestFailed(status, body)) => {
+            eprintln!("HTTP {} error: {}", status, body);
+        }
+        Err(e) => {
+            eprintln!("Error: {}", e);
+        }
+    }
+}
+```
+
+## Configuration
+
+```rust
+use firecrawl::FirecrawlApp;
+
+// Cloud API (default)
+let app = FirecrawlApp::new("fc-YOUR_API_KEY")?;
+
+// Self-hosted with API key
+let app = FirecrawlApp::new_selfhosted(
+    "http://localhost:3002",
+    Some("your-api-key")
+)?;
+
+// Self-hosted without API key
+let app = FirecrawlApp::new_selfhosted(
+    "http://localhost:3002",
+    None::<&str>
+)?;
+```
+
+## Testing
+
+Run the test suite:
+
+```bash
+# Set your API key
+export $(xargs < ./tests/.env)
+
+# Run E2E tests
+cargo test --test e2e_with_auth
+
+# Run v2 E2E tests
+cargo test --test v2_e2e
+```
+
+## Examples
+
+See the [examples directory](https://github.com/firecrawl/firecrawl/tree/main/apps/rust-sdk/examples) for more usage examples:
+
+- `example.rs` - Basic v1 usage
+- `v2_example.rs` - v2 API usage
+- `extract_example.rs` - Structured data extraction
+- `search_example.rs` - Web search
+- `batch_scrape_example.rs` - Batch scraping
+- `cancel_crawl_example.rs` - Cancelling crawls
+
+## Resources
+
+- [crates.io Package](https://crates.io/crates/firecrawl)
+- [GitHub Repository](https://github.com/firecrawl/firecrawl)
+- [API Reference](/api-reference/introduction)
+- [Examples](https://github.com/firecrawl/firecrawl/tree/main/apps/rust-sdk/examples)

@@ -1,0 +1,99 @@
+---
+title: 'Cancel Crawl'
+description: 'Cancel an ongoing crawl job'
+---
+
+## DELETE /v1/crawl/{id}
+
+Cancel a crawl job that is currently in progress.
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token. Include your API key in the `Authorization` header:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the crawl job to cancel (UUID format)
+</ParamField>
+
+## Response
+
+<ResponseField name="status" type="string">
+  The status after cancellation. Will be `cancelled` on successful cancellation.
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X DELETE https://api.firecrawl.dev/v1/crawl/123e4567-e89b-12d3-a456-426614174000 \
+  -H 'Authorization: Bearer YOUR_API_KEY'
+```
+
+```python Python
+from firecrawl import FirecrawlApp
+
+app = FirecrawlApp(api_key="YOUR_API_KEY")
+
+# Cancel a crawl job
+result = app.cancel_crawl("123e4567-e89b-12d3-a456-426614174000")
+
+print(f"Status: {result['status']}")
+```
+
+```javascript JavaScript
+import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({ apiKey: 'YOUR_API_KEY' });
+
+// Cancel a crawl job
+const result = await app.cancelCrawl('123e4567-e89b-12d3-a456-426614174000');
+
+console.log(`Status: ${result.status}`);
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json
+{
+  "status": "cancelled"
+}
+```
+
+## Error Responses
+
+<ResponseField name="404 Not Found">
+  ```json
+  {
+    "error": "Crawl job not found."
+  }
+  ```
+  
+  This error occurs when:
+  - The crawl ID doesn't exist
+  - The crawl belongs to a different account
+  - The crawl has already completed or been deleted
+</ResponseField>
+
+<ResponseField name="500 Server Error">
+  ```json
+  {
+    "error": "An unexpected error occurred on the server."
+  }
+  ```
+</ResponseField>
+
+## Important Notes
+
+- Cancelling a crawl will stop it immediately, and you'll only be charged for pages that were already crawled
+- You can still retrieve partial results from a cancelled crawl using the [Get Crawl Status](/api-reference/crawling/get-crawl-status) endpoint
+- Once cancelled, a crawl cannot be resumed - you'll need to start a new crawl job
+- Cancelled crawls will have their status set to `cancelled` instead of `completed` or `failed`

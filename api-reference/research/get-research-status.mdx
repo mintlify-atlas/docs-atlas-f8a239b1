@@ -1,0 +1,202 @@
+---
+title: 'Get Research Status'
+description: 'Get the status and results of a deep research operation'
+---
+
+## GET /v1/deep-research/{id}
+
+Retrieve the status and results of a deep research operation initiated with the [Start Deep Research](/api-reference/research/deep-research) endpoint.
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token in the Authorization header.
+
+```bash
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Path Parameters
+
+<ParamField path="id" type="string" required>
+  The ID of the research job (UUID format)
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates if the request was successful
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Research job data
+  
+  <Expandable title="properties">
+    <ResponseField name="status" type="string">
+      Current status of the research job. Values: `processing`, `completed`, `failed`
+    </ResponseField>
+    
+    <ResponseField name="finalAnalysis" type="string">
+      The final analysis in markdown format (when completed)
+    </ResponseField>
+    
+    <ResponseField name="json" type="object">
+      Structured JSON output (displayed when using JSON format)
+    </ResponseField>
+    
+    <ResponseField name="activities" type="array">
+      Array of activity objects tracking research progress
+      
+      <Expandable title="activity object">
+        <ResponseField name="type" type="string">
+          Type of activity
+        </ResponseField>
+        
+        <ResponseField name="status" type="string">
+          Status of the activity
+        </ResponseField>
+        
+        <ResponseField name="message" type="string">
+          Activity message
+        </ResponseField>
+        
+        <ResponseField name="timestamp" type="string">
+          ISO 8601 timestamp
+        </ResponseField>
+        
+        <ResponseField name="depth" type="integer">
+          Current depth in research iteration
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="sources" type="array">
+      Array of source objects used in the research
+      
+      <Expandable title="source object">
+        <ResponseField name="url" type="string">
+          Source URL
+        </ResponseField>
+        
+        <ResponseField name="title" type="string">
+          Source title
+        </ResponseField>
+        
+        <ResponseField name="description" type="string">
+          Source description
+        </ResponseField>
+        
+        <ResponseField name="favicon" type="string">
+          Source favicon URL
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="error" type="string">
+      Error message if the research failed
+    </ResponseField>
+    
+    <ResponseField name="expiresAt" type="string">
+      ISO 8601 timestamp when the research results will expire
+    </ResponseField>
+    
+    <ResponseField name="currentDepth" type="integer">
+      Current depth of research iteration
+    </ResponseField>
+    
+    <ResponseField name="maxDepth" type="integer">
+      Maximum configured depth
+    </ResponseField>
+    
+    <ResponseField name="totalUrls" type="integer">
+      Total number of URLs analyzed
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Example Request
+
+<CodeGroup>
+
+```bash cURL
+curl -X GET https://api.firecrawl.dev/v1/deep-research/550e8400-e29b-41d4-a716-446655440000 \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```python Python
+from firecrawl import FirecrawlApp
+
+app = FirecrawlApp(api_key='YOUR_API_KEY')
+
+research_id = '550e8400-e29b-41d4-a716-446655440000'
+status = app.get_deep_research_status(research_id)
+
+print(f"Status: {status['data']['status']}")
+if status['data']['status'] == 'completed':
+    print(f"Analysis: {status['data']['finalAnalysis']}")
+```
+
+```javascript JavaScript
+import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({ apiKey: 'YOUR_API_KEY' });
+
+const researchId = '550e8400-e29b-41d4-a716-446655440000';
+const status = await app.getDeepResearchStatus(researchId);
+
+console.log(`Status: ${status.data.status}`);
+if (status.data.status === 'completed') {
+  console.log(`Analysis: ${status.data.finalAnalysis}`);
+}
+```
+
+</CodeGroup>
+
+## Example Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "status": "completed",
+    "finalAnalysis": "# Latest Developments in Quantum Computing\n\nQuantum computing has seen significant advances in 2024...\n\n## Key Breakthroughs\n\n1. Error correction improvements\n2. New qubit technologies\n3. Commercial applications\n\n## Sources\n\nBased on research from leading institutions...",
+    "activities": [
+      {
+        "type": "search",
+        "status": "completed",
+        "message": "Searched for quantum computing developments",
+        "timestamp": "2024-03-15T10:30:00Z",
+        "depth": 1
+      }
+    ],
+    "sources": [
+      {
+        "url": "https://example.com/quantum-news",
+        "title": "Quantum Computing Breakthroughs 2024",
+        "description": "Latest advances in quantum technology",
+        "favicon": "https://example.com/favicon.ico"
+      }
+    ],
+    "currentDepth": 5,
+    "maxDepth": 5,
+    "totalUrls": 15,
+    "expiresAt": "2024-03-22T10:30:00Z"
+  }
+}
+```
+
+## Error Responses
+
+<ResponseField name="404 Not Found" type="object">
+  Research job not found
+  
+  ```json
+  {
+    "success": false,
+    "error": "Research job not found"
+  }
+  ```
+</ResponseField>
+
+## Polling for Results
+
+Since deep research operations can take time to complete, you should poll this endpoint periodically until the status is `completed` or `failed`. A reasonable polling interval is every 5-10 seconds.

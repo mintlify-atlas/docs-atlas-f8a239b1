@@ -1,0 +1,607 @@
+---
+title: 'Actions'
+description: 'Interact with pages before scraping using actions like click, scroll, type, and wait'
+---
+
+Actions allow you to interact with a web page before scraping its content. This is useful for:
+
+- Clicking "Load More" buttons to reveal additional content
+- Filling out forms and logging in
+- Scrolling to trigger lazy-loaded content
+- Taking screenshots at different stages of interaction
+- Executing custom JavaScript
+
+## Available Actions
+
+Actions are executed sequentially in the order they are provided. Each action is performed before the final scrape.
+
+### Wait
+
+Pause execution for a specified amount of time or until an element appears.
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# Wait for 2 seconds
+doc = app.scrape(
+    url="https://example.com",
+    formats=["markdown"],
+    actions=[
+        {"type": "wait", "milliseconds": 2000}
+    ]
+)
+
+# Wait for a specific element to appear
+doc = app.scrape(
+    url="https://example.com",
+    formats=["markdown"],
+    actions=[
+        {"type": "wait", "selector": "#content-loaded"}
+    ]
+)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// Wait for 2 seconds
+const doc = await app.scrape({
+  url: 'https://example.com',
+  formats: ['markdown'],
+  actions: [
+    { type: 'wait', milliseconds: 2000 }
+  ]
+});
+
+// Wait for a specific element
+const doc2 = await app.scrape({
+  url: 'https://example.com',
+  formats: ['markdown'],
+  actions: [
+    { type: 'wait', selector: '#content-loaded' }
+  ]
+});
+```
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v2/scrape' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://example.com",
+    "formats": ["markdown"],
+    "actions": [
+      {"type": "wait", "milliseconds": 2000}
+    ]
+  }'
+```
+</CodeGroup>
+
+### Click
+
+Click on an element identified by a CSS selector.
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# Click a single button
+doc = app.scrape(
+    url="https://example.com",
+    formats=["markdown"],
+    actions=[
+        {"type": "click", "selector": "#load-more-button"},
+        {"type": "wait", "milliseconds": 1000}
+    ]
+)
+
+# Click all matching elements
+doc = app.scrape(
+    url="https://example.com",
+    formats=["markdown"],
+    actions=[
+        {"type": "click", "selector": ".expand-button", "all": True}
+    ]
+)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// Click a single button
+const doc = await app.scrape({
+  url: 'https://example.com',
+  formats: ['markdown'],
+  actions: [
+    { type: 'click', selector: '#load-more-button' },
+    { type: 'wait', milliseconds: 1000 }
+  ]
+});
+
+// Click all matching elements
+const doc2 = await app.scrape({
+  url: 'https://example.com',
+  formats: ['markdown'],
+  actions: [
+    { type: 'click', selector: '.expand-button', all: true }
+  ]
+});
+```
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v2/scrape' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://example.com",
+    "formats": ["markdown"],
+    "actions": [
+      {"type": "click", "selector": "#load-more-button"},
+      {"type": "wait", "milliseconds": 1000}
+    ]
+  }'
+```
+</CodeGroup>
+
+<Tip>
+Set `"all": true` to click all elements matching the selector. This is useful for expanding multiple sections at once.
+</Tip>
+
+### Write
+
+Type text into input fields, text areas, or contenteditable elements.
+
+<Warning>
+You must first focus the element using a 'click' action before writing. The text will be typed character by character to simulate keyboard input.
+</Warning>
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+doc = app.scrape(
+    url="https://example.com/login",
+    formats=["markdown"],
+    actions=[
+        {"type": "write", "text": "user@example.com"},
+        {"type": "press", "key": "Tab"},
+        {"type": "write", "text": "password"},
+        {"type": "click", "selector": 'button[type="submit"]'},
+        {"type": "wait", "milliseconds": 2000}
+    ]
+)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc = await app.scrape({
+  url: 'https://example.com/login',
+  formats: ['markdown'],
+  actions: [
+    { type: 'write', text: 'user@example.com' },
+    { type: 'press', key: 'Tab' },
+    { type: 'write', text: 'password' },
+    { type: 'click', selector: 'button[type="submit"]' },
+    { type: 'wait', milliseconds: 2000 }
+  ]
+});
+```
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v2/scrape' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://example.com/login",
+    "formats": ["markdown"],
+    "actions": [
+      {"type": "write", "text": "user@example.com"},
+      {"type": "press", "key": "Tab"},
+      {"type": "write", "text": "password"},
+      {"type": "click", "selector": "button[type=\\"submit\\"]"},
+      {"type": "wait", "milliseconds": 2000}
+    ]
+  }'
+```
+</CodeGroup>
+
+### Press
+
+Press a keyboard key. Useful for navigation, submitting forms, or triggering keyboard shortcuts.
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+doc = app.scrape(
+    url="https://example.com",
+    formats=["markdown"],
+    actions=[
+        {"type": "press", "key": "Enter"},
+        {"type": "wait", "milliseconds": 1000}
+    ]
+)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc = await app.scrape({
+  url: 'https://example.com',
+  formats: ['markdown'],
+  actions: [
+    { type: 'press', key: 'Enter' },
+    { type: 'wait', milliseconds: 1000 }
+  ]
+});
+```
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v2/scrape' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://example.com",
+    "formats": ["markdown"],
+    "actions": [
+      {"type": "press", "key": "Enter"},
+      {"type": "wait", "milliseconds": 1000}
+    ]
+  }'
+```
+</CodeGroup>
+
+<Tip>
+See [key codes reference](https://asawicki.info/nosense/doc/devices/keyboard/key_codes.html) for available key values.
+</Tip>
+
+### Scroll
+
+Scroll the page or a specific element to reveal lazy-loaded content.
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+# Scroll the entire page down
+doc = app.scrape(
+    url="https://example.com",
+    formats=["markdown"],
+    actions=[
+        {"type": "scroll", "direction": "down"},
+        {"type": "wait", "milliseconds": 1000}
+    ]
+)
+
+# Scroll a specific element
+doc = app.scrape(
+    url="https://example.com",
+    formats=["markdown"],
+    actions=[
+        {"type": "scroll", "direction": "down", "selector": "#scrollable-div"}
+    ]
+)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+// Scroll the entire page down
+const doc = await app.scrape({
+  url: 'https://example.com',
+  formats: ['markdown'],
+  actions: [
+    { type: 'scroll', direction: 'down' },
+    { type: 'wait', milliseconds: 1000 }
+  ]
+});
+
+// Scroll a specific element
+const doc2 = await app.scrape({
+  url: 'https://example.com',
+  formats: ['markdown'],
+  actions: [
+    { type: 'scroll', direction: 'down', selector: '#scrollable-div' }
+  ]
+});
+```
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v2/scrape' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://example.com",
+    "formats": ["markdown"],
+    "actions": [
+      {"type": "scroll", "direction": "down"},
+      {"type": "wait", "milliseconds": 1000}
+    ]
+  }'
+```
+</CodeGroup>
+
+### Screenshot
+
+Take a screenshot during action execution. Screenshots are returned in the response's `actions.screenshots` array.
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+doc = app.scrape(
+    url="https://example.com",
+    formats=["markdown"],
+    actions=[
+        {"type": "screenshot"},  # Viewport screenshot
+        {"type": "click", "selector": "#show-modal"},
+        {"type": "wait", "milliseconds": 500},
+        {"type": "screenshot", "fullPage": True}  # Full page screenshot
+    ]
+)
+
+# Access screenshots from the response
+if doc.actions and doc.actions.get('screenshots'):
+    for i, screenshot_url in enumerate(doc.actions['screenshots']):
+        print(f"Screenshot {i}: {screenshot_url}")
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc = await app.scrape({
+  url: 'https://example.com',
+  formats: ['markdown'],
+  actions: [
+    { type: 'screenshot' },  // Viewport screenshot
+    { type: 'click', selector: '#show-modal' },
+    { type: 'wait', milliseconds: 500 },
+    { type: 'screenshot', fullPage: true }  // Full page screenshot
+  ]
+});
+
+// Access screenshots from the response
+if (doc.actions?.screenshots) {
+  doc.actions.screenshots.forEach((url, i) => {
+    console.log(`Screenshot ${i}: ${url}`);
+  });
+}
+```
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v2/scrape' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://example.com",
+    "formats": ["markdown"],
+    "actions": [
+      {"type": "screenshot"},
+      {"type": "click", "selector": "#show-modal"},
+      {"type": "wait", "milliseconds": 500},
+      {"type": "screenshot", "fullPage": true}
+    ]
+  }'
+```
+</CodeGroup>
+
+### Scrape
+
+Scrape the current page content during action execution. Results are returned in the response's `actions.scrapes` array.
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+doc = app.scrape(
+    url="https://example.com",
+    formats=["markdown"],
+    actions=[
+        {"type": "scrape"},  # Scrape initial state
+        {"type": "click", "selector": "#load-more"},
+        {"type": "wait", "milliseconds": 1000},
+        {"type": "scrape"}  # Scrape after loading more content
+    ]
+)
+
+# Access intermediate scrapes
+if doc.actions and doc.actions.get('scrapes'):
+    for i, scrape in enumerate(doc.actions['scrapes']):
+        print(f"Scrape {i} URL: {scrape['url']}")
+        print(f"HTML length: {len(scrape['html'])}")
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc = await app.scrape({
+  url: 'https://example.com',
+  formats: ['markdown'],
+  actions: [
+    { type: 'scrape' },  // Scrape initial state
+    { type: 'click', selector: '#load-more' },
+    { type: 'wait', milliseconds: 1000 },
+    { type: 'scrape' }  // Scrape after loading more content
+  ]
+});
+
+// Access intermediate scrapes
+if (doc.actions?.scrapes) {
+  doc.actions.scrapes.forEach((scrape, i) => {
+    console.log(`Scrape ${i} URL: ${scrape.url}`);
+    console.log(`HTML length: ${scrape.html.length}`);
+  });
+}
+```
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v2/scrape' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://example.com",
+    "formats": ["markdown"],
+    "actions": [
+      {"type": "scrape"},
+      {"type": "click", "selector": "#load-more"},
+      {"type": "wait", "milliseconds": 1000},
+      {"type": "scrape"}
+    ]
+  }'
+```
+</CodeGroup>
+
+### Execute JavaScript
+
+Execute custom JavaScript code on the page. The return value is available in the response's `actions.javascriptReturns` array.
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+doc = app.scrape(
+    url="https://example.com",
+    formats=["markdown"],
+    actions=[
+        {
+            "type": "executeJavascript",
+            "script": "document.querySelector('.hidden-content').style.display = 'block';"
+        },
+        {"type": "wait", "milliseconds": 500}
+    ]
+)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc = await app.scrape({
+  url: 'https://example.com',
+  formats: ['markdown'],
+  actions: [
+    {
+      type: 'executeJavascript',
+      script: "document.querySelector('.hidden-content').style.display = 'block';"
+    },
+    { type: 'wait', milliseconds: 500 }
+  ]
+});
+```
+
+```bash cURL
+curl -X POST 'https://api.firecrawl.dev/v2/scrape' \
+  -H 'Authorization: Bearer fc-YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "url": "https://example.com",
+    "formats": ["markdown"],
+    "actions": [
+      {
+        "type": "executeJavascript",
+        "script": "document.querySelector(\'.hidden-content\').style.display = \'.block\';"}
+      },
+      {"type": "wait", "milliseconds": 500}
+    ]
+  }'
+```
+</CodeGroup>
+
+## Complete Example: Login Flow
+
+Here's a complete example showing how to combine multiple actions to log into a website:
+
+<CodeGroup>
+```python Python
+from firecrawl import Firecrawl
+
+app = Firecrawl(api_key="fc-YOUR_API_KEY")
+
+doc = app.scrape(
+    url="https://example.com/login",
+    formats=["markdown"],
+    actions=[
+        {"type": "write", "text": "user@example.com"},
+        {"type": "press", "key": "Tab"},
+        {"type": "write", "text": "password"},
+        {"type": "click", "selector": 'button[type="submit"]'},
+        {"type": "wait", "milliseconds": 2000},
+        {"type": "screenshot"}
+    ]
+)
+
+print(doc.markdown)
+```
+
+```javascript Node.js
+import Firecrawl from '@mendable/firecrawl-js';
+
+const app = new Firecrawl({ apiKey: 'fc-YOUR_API_KEY' });
+
+const doc = await app.scrape({
+  url: 'https://example.com/login',
+  formats: ['markdown'],
+  actions: [
+    { type: 'write', text: 'user@example.com' },
+    { type: 'press', key: 'Tab' },
+    { type: 'write', text: 'password' },
+    { type: 'click', selector: 'button[type="submit"]' },
+    { type: 'wait', milliseconds: 2000 },
+    { type: 'screenshot' }
+  ]
+});
+
+console.log(doc.markdown);
+```
+</CodeGroup>
+
+## Best Practices
+
+<Tip>
+**Add wait times between actions**: Pages need time to respond to interactions. Add `wait` actions with appropriate delays after clicks, scrolls, or form submissions.
+</Tip>
+
+<Tip>
+**Use specific selectors**: Be as specific as possible with CSS selectors to ensure you're targeting the correct elements. Use IDs when available.
+</Tip>
+
+<Tip>
+**Test action sequences**: Test your action sequences in a browser's developer tools first to ensure they work as expected.
+</Tip>
+
+<Warning>
+Using actions with sensitive data (like login credentials) will set `storeInCache` to `false` automatically for security purposes.
+</Warning>

@@ -1,0 +1,233 @@
+---
+title: 'Scrape a single URL'
+description: 'Scrape a single URL and optionally extract information using an LLM'
+---
+
+## Endpoint
+
+<CodeGroup>
+```http
+POST /v1/scrape
+```
+</CodeGroup>
+
+## Authentication
+
+This endpoint requires authentication using a Bearer token. Include your API key in the Authorization header:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+## Request Body
+
+<ParamField body="url" type="string" required>
+  The URL to scrape
+</ParamField>
+
+<ParamField body="formats" type="array" default={["markdown"]}>
+  Formats to include in the output. Options: `markdown`, `html`, `rawHtml`, `links`, `screenshot`, `screenshot@fullPage`, `json`, `changeTracking`, `branding`
+</ParamField>
+
+<ParamField body="onlyMainContent" type="boolean" default={true}>
+  Only return the main content of the page excluding headers, navs, footers, etc.
+</ParamField>
+
+<ParamField body="includeTags" type="array">
+  Tags to include in the output.
+</ParamField>
+
+<ParamField body="excludeTags" type="array">
+  Tags to exclude from the output.
+</ParamField>
+
+<ParamField body="maxAge" type="integer" default={0}>
+  Returns a cached version of the page if it is younger than this age in milliseconds. If a cached version of the page is older than this value, the page will be scraped. If you do not need extremely fresh data, enabling this can speed up your scrapes by 500%. Defaults to 0, which disables caching.
+</ParamField>
+
+<ParamField body="headers" type="object">
+  Headers to send with the request. Can be used to send cookies, user-agent, etc.
+</ParamField>
+
+<ParamField body="waitFor" type="integer" default={0}>
+  Specify a delay in milliseconds before fetching the content, allowing the page sufficient time to load.
+</ParamField>
+
+<ParamField body="mobile" type="boolean" default={false}>
+  Set to true if you want to emulate scraping from a mobile device. Useful for testing responsive pages and taking mobile screenshots.
+</ParamField>
+
+<ParamField body="skipTlsVerification" type="boolean" default={false}>
+  Skip TLS certificate verification when making requests
+</ParamField>
+
+<ParamField body="timeout" type="integer" default={30000}>
+  Timeout in milliseconds for the request
+</ParamField>
+
+<ParamField body="parsePDF" type="boolean" default={true}>
+  Controls how PDF files are processed during scraping. When true, the PDF content is extracted and converted to markdown format, with billing based on the number of pages (1 credit per page). When false, the PDF file is returned in base64 encoding with a flat rate of 1 credit total.
+</ParamField>
+
+<ParamField body="jsonOptions" type="object">
+  JSON options object
+  <Expandable title="properties">
+    <ParamField body="jsonOptions.schema" type="object">
+      The schema to use for the extraction (Optional). Must conform to [JSON Schema](https://json-schema.org/).
+    </ParamField>
+    <ParamField body="jsonOptions.systemPrompt" type="string">
+      The system prompt to use for the extraction (Optional)
+    </ParamField>
+    <ParamField body="jsonOptions.prompt" type="string">
+      The prompt to use for the extraction without a schema (Optional)
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="actions" type="array">
+  Actions to perform on the page before grabbing the content
+</ParamField>
+
+<ParamField body="location" type="object">
+  Location settings for the request. When specified, this will use an appropriate proxy if available and emulate the corresponding language and timezone settings. Defaults to 'US' if not specified.
+  <Expandable title="properties">
+    <ParamField body="location.country" type="string" default="US">
+      ISO 3166-1 alpha-2 country code (e.g., 'US', 'AU', 'DE', 'JP')
+    </ParamField>
+    <ParamField body="location.languages" type="array">
+      Preferred languages and locales for the request in order of priority. Defaults to the language of the specified location.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="removeBase64Images" type="boolean">
+  Removes all base 64 images from the output, which may be overwhelmingly long. The image's alt text remains in the output, but the URL is replaced with a placeholder.
+</ParamField>
+
+<ParamField body="blockAds" type="boolean" default={true}>
+  Enables ad-blocking and cookie popup blocking.
+</ParamField>
+
+<ParamField body="proxy" type="string">
+  Specifies the type of proxy to use. Options: `basic`, `enhanced`, `auto`
+  
+  - **basic**: Proxies for scraping sites with none to basic anti-bot solutions. Fast and usually works.
+  - **enhanced**: Enhanced proxies for scraping sites with advanced anti-bot solutions. Slower, but more reliable on certain sites. Costs up to 5 credits per request.
+  - **auto**: Firecrawl will automatically retry scraping with enhanced proxies if the basic proxy fails. If the retry with enhanced is successful, 5 credits will be billed for the scrape. If the first attempt with basic is successful, only the regular cost will be billed.
+</ParamField>
+
+<ParamField body="storeInCache" type="boolean" default={true}>
+  If true, the page will be stored in the Firecrawl index and cache. Setting this to false is useful if your scraping activity may have data protection concerns. Using some parameters associated with sensitive scraping (actions, headers) will force this parameter to be false.
+</ParamField>
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates whether the scrape was successful
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  The scraped data
+  <Expandable title="properties">
+    <ResponseField name="markdown" type="string">
+      The main content in markdown format
+    </ResponseField>
+    <ResponseField name="html" type="string">
+      HTML version of the content on page if `html` is in `formats`
+    </ResponseField>
+    <ResponseField name="rawHtml" type="string">
+      Raw HTML content of the page if `rawHtml` is in `formats`
+    </ResponseField>
+    <ResponseField name="screenshot" type="string">
+      Screenshot of the page if `screenshot` is in `formats`
+    </ResponseField>
+    <ResponseField name="links" type="array">
+      List of links on the page if `links` is in `formats`
+    </ResponseField>
+    <ResponseField name="actions" type="object">
+      Results of the actions specified in the `actions` parameter. Only present if the `actions` parameter was provided in the request
+    </ResponseField>
+    <ResponseField name="metadata" type="object">
+      Page metadata including title, description, sourceURL, statusCode, and other properties
+    </ResponseField>
+    <ResponseField name="llm_extraction" type="object">
+      Displayed when using LLM Extraction. Extracted data from the page following the schema defined.
+    </ResponseField>
+    <ResponseField name="warning" type="string">
+      Can be displayed when using LLM Extraction. Warning message will let you know any issues with the extraction.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api.firecrawl.dev/v1/scrape \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -d '{
+    "url": "https://example.com",
+    "formats": ["markdown", "html"]
+  }'
+```
+
+```python Python
+from firecrawl import FirecrawlApp
+
+app = FirecrawlApp(api_key='YOUR_API_KEY')
+
+result = app.scrape_url(
+    url='https://example.com',
+    params={
+        'formats': ['markdown', 'html']
+    }
+)
+
+print(result)
+```
+
+```javascript JavaScript
+import FirecrawlApp from '@mendable/firecrawl-js';
+
+const app = new FirecrawlApp({ apiKey: 'YOUR_API_KEY' });
+
+const result = await app.scrapeUrl('https://example.com', {
+  formats: ['markdown', 'html']
+});
+
+console.log(result);
+```
+</CodeGroup>
+
+## Error Responses
+
+<ResponseField name="402" type="object">
+  **Payment Required** - Payment required to access this resource.
+  
+  ```json
+  {
+    "error": "Payment required to access this resource."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="429" type="object">
+  **Too Many Requests** - Request rate limit exceeded.
+  
+  ```json
+  {
+    "error": "Request rate limit exceeded. Please wait and try again later."
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500" type="object">
+  **Server Error** - An unexpected error occurred on the server.
+  
+  ```json
+  {
+    "error": "An unexpected error occurred on the server."
+  }
+  ```
+</ResponseField>
