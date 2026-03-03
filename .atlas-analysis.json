@@ -1,0 +1,171 @@
+{
+  "projectType": "api-service",
+  "projectName": "Firecrawl",
+  "projectDescription": "Turn websites into LLM-ready data with web scraping, crawling, and structured data extraction API",
+  "theme": "aspen",
+  "primaryColor": "#FF6B35",
+  "lightColor": "#FFB088",
+  "darkColor": "#D84315",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "authentication"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/scrape",
+              "features/crawl",
+              "features/map",
+              "features/search",
+              "features/agent",
+              "features/batch-scrape"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/actions",
+              "advanced/formats",
+              "advanced/webhooks",
+              "advanced/pagination",
+              "advanced/error-handling"
+            ]
+          },
+          {
+            "group": "Self-Hosting",
+            "pages": [
+              "self-hosting/overview",
+              "self-hosting/setup",
+              "self-hosting/configuration"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "api-reference/introduction",
+              "api-reference/rate-limits"
+            ]
+          },
+          {
+            "group": "Scraping",
+            "pages": [
+              "api-reference/scraping/scrape",
+              "api-reference/scraping/batch-scrape",
+              "api-reference/scraping/get-batch-status",
+              "api-reference/scraping/cancel-batch",
+              "api-reference/scraping/get-batch-errors"
+            ]
+          },
+          {
+            "group": "Crawling",
+            "pages": [
+              "api-reference/crawling/crawl",
+              "api-reference/crawling/get-crawl-status",
+              "api-reference/crawling/cancel-crawl",
+              "api-reference/crawling/get-crawl-errors",
+              "api-reference/crawling/get-active-crawls"
+            ]
+          },
+          {
+            "group": "Mapping",
+            "pages": [
+              "api-reference/mapping/map"
+            ]
+          },
+          {
+            "group": "Search",
+            "pages": [
+              "api-reference/search/search"
+            ]
+          },
+          {
+            "group": "Agent",
+            "pages": [
+              "api-reference/agent/agent"
+            ]
+          },
+          {
+            "group": "Research",
+            "pages": [
+              "api-reference/research/deep-research",
+              "api-reference/research/get-research-status"
+            ]
+          },
+          {
+            "group": "Billing",
+            "pages": [
+              "api-reference/billing/get-credit-usage"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "SDKs",
+        "groups": [
+          {
+            "group": "Official SDKs",
+            "pages": [
+              "sdks/python",
+              "sdks/javascript",
+              "sdks/rust",
+              "sdks/java"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "sdks/cli",
+              "sdks/mcp-server"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Scrape - Convert URLs to markdown, HTML, or structured JSON",
+    "Crawl - Scrape entire websites with configurable depth and limits",
+    "Map - Discover all URLs on a website instantly",
+    "Search - Search the web and scrape results",
+    "Agent - Autonomous data gathering with AI",
+    "Batch Scrape - Process multiple URLs asynchronously",
+    "Actions - Interact with pages before scraping (click, scroll, type)",
+    "Formats - Multiple output formats (markdown, HTML, JSON, screenshots)",
+    "Webhooks - Real-time notifications for async operations",
+    "Deep Research - Multi-depth research with source analysis"
+  ],
+  "publicApiSurface": [
+    "POST /v1/scrape - Scrape a single URL",
+    "POST /v1/batch/scrape - Batch scrape multiple URLs",
+    "GET /v1/batch/scrape/{id} - Get batch scrape status",
+    "DELETE /v1/batch/scrape/{id} - Cancel batch scrape",
+    "GET /v1/batch/scrape/{id}/errors - Get batch scrape errors",
+    "POST /v1/crawl - Start a crawl job",
+    "GET /v1/crawl/{id} - Get crawl status",
+    "DELETE /v1/crawl/{id} - Cancel crawl",
+    "GET /v1/crawl/{id}/errors - Get crawl errors",
+    "GET /v1/crawl/active - Get active crawls",
+    "POST /v1/map - Map website URLs",
+    "POST /v1/search - Search the web",
+    "POST /v1/agent - AI agent for data gathering",
+    "POST /v1/extract - Extract structured data",
+    "GET /v1/extract/{id} - Get extraction status",
+    "POST /v1/deep-research - Start deep research",
+    "GET /v1/deep-research/{id} - Get research status",
+    "GET /v1/team/credit-usage - Get credit usage"
+  ]
+}
